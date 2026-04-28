@@ -14,16 +14,373 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      groups: {
+        Row: {
+          id: string
+          name: string
+        }
+        Insert: {
+          id: string
+          name: string
+        }
+        Update: {
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      knockout_predictions: {
+        Row: {
+          created_at: string
+          id: string
+          points_awarded: number
+          reached_phase: Database["public"]["Enums"]["match_phase"]
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_awarded?: number
+          reached_phase: Database["public"]["Enums"]["match_phase"]
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_awarded?: number
+          reached_phase?: Database["public"]["Enums"]["match_phase"]
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knockout_predictions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          away_score: number | null
+          away_team_id: string | null
+          group_id: string | null
+          home_score: number | null
+          home_team_id: string | null
+          id: string
+          is_finished: boolean
+          match_date: string | null
+          match_number: number
+          phase: Database["public"]["Enums"]["match_phase"]
+          round_label: string
+        }
+        Insert: {
+          away_score?: number | null
+          away_team_id?: string | null
+          group_id?: string | null
+          home_score?: number | null
+          home_team_id?: string | null
+          id?: string
+          is_finished?: boolean
+          match_date?: string | null
+          match_number: number
+          phase: Database["public"]["Enums"]["match_phase"]
+          round_label: string
+        }
+        Update: {
+          away_score?: number | null
+          away_team_id?: string | null
+          group_id?: string | null
+          home_score?: number | null
+          home_team_id?: string | null
+          id?: string
+          is_finished?: boolean
+          match_date?: string | null
+          match_number?: number
+          phase?: Database["public"]["Enums"]["match_phase"]
+          round_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictions: {
+        Row: {
+          away_score: number
+          created_at: string
+          home_score: number
+          id: string
+          match_id: string
+          points_awarded: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          away_score: number
+          created_at?: string
+          home_score: number
+          id?: string
+          match_id: string
+          points_awarded?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          away_score?: number
+          created_at?: string
+          home_score?: number
+          id?: string
+          match_id?: string
+          points_awarded?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scoring_rules: {
+        Row: {
+          description: string | null
+          id: string
+          label: string
+          points: number
+          rule_key: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          label: string
+          points: number
+          rule_key: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          label?: string
+          points?: number
+          rule_key?: string
+        }
+        Relationships: []
+      }
+      special_predictions: {
+        Row: {
+          best_goalkeeper: string | null
+          best_player: string | null
+          champion_team_id: string | null
+          created_at: string
+          id: string
+          points_awarded: number
+          top_scorer: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_goalkeeper?: string | null
+          best_player?: string | null
+          champion_team_id?: string | null
+          created_at?: string
+          id?: string
+          points_awarded?: number
+          top_scorer?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_goalkeeper?: string | null
+          best_player?: string | null
+          champion_team_id?: string | null
+          created_at?: string
+          id?: string
+          points_awarded?: number
+          top_scorer?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_predictions_champion_team_id_fkey"
+            columns: ["champion_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_official_results: {
+        Row: {
+          group_position: number | null
+          reached_phase: Database["public"]["Enums"]["match_phase"] | null
+          team_id: string
+        }
+        Insert: {
+          group_position?: number | null
+          reached_phase?: Database["public"]["Enums"]["match_phase"] | null
+          team_id: string
+        }
+        Update: {
+          group_position?: number | null
+          reached_phase?: Database["public"]["Enums"]["match_phase"] | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_official_results_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          code: string
+          fifa_rank: number | null
+          flag: string
+          group_id: string
+          id: string
+          is_top15: boolean
+          name: string
+        }
+        Insert: {
+          code: string
+          fifa_rank?: number | null
+          flag: string
+          group_id: string
+          id?: string
+          is_top15?: boolean
+          name: string
+        }
+        Update: {
+          code?: string
+          fifa_rank?: number | null
+          flag?: string
+          group_id?: string
+          id?: string
+          is_top15?: boolean
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_settings: {
+        Row: {
+          current_phase: Database["public"]["Enums"]["tournament_phase"]
+          group_picks_locked: boolean
+          id: number
+          knockout_picks_locked: boolean
+        }
+        Insert: {
+          current_phase?: Database["public"]["Enums"]["tournament_phase"]
+          group_picks_locked?: boolean
+          id?: number
+          knockout_picks_locked?: boolean
+        }
+        Update: {
+          current_phase?: Database["public"]["Enums"]["tournament_phase"]
+          group_picks_locked?: boolean
+          id?: number
+          knockout_picks_locked?: boolean
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      match_phase: "group" | "r32" | "r16" | "qf" | "sf" | "final"
+      tournament_phase: "groups" | "knockout" | "finished"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +507,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      match_phase: ["group", "r32", "r16", "qf", "sf", "final"],
+      tournament_phase: ["groups", "knockout", "finished"],
+    },
   },
 } as const
