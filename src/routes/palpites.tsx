@@ -5,6 +5,7 @@ import { Lock, Save, Trophy, Users } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,44 @@ import { PHASE_LABEL, type MatchPhase } from "@/lib/scoring";
 export const Route = createFileRoute("/palpites")({
   component: () => <AuthGate><PalpitesPage /></AuthGate>,
 });
+
+function ScoreInput({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const num = value === "" ? null : parseInt(value);
+  const set = (v: number) => onChange(String(Math.max(0, Math.min(20, v))));
+  return (
+    <div className="inline-flex items-center rounded-lg border border-border bg-background overflow-hidden shadow-sm">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => set((num ?? 0) - 1)}
+        className="h-9 w-7 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+        aria-label="Diminuir"
+      >
+        <Minus className="h-3.5 w-3.5" />
+      </button>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={20}
+        disabled={disabled}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-9 w-10 text-center text-lg font-bold bg-transparent outline-none border-x border-border disabled:opacity-50"
+        placeholder="-"
+      />
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => set((num ?? 0) + 1)}
+        className="h-9 w-7 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+        aria-label="Aumentar"
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
 
 function PalpitesPage() {
   const { user } = useAuth();
@@ -177,27 +216,25 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, onSaved }
             const home = teamsById.get(mt.home_team_id);
             const away = teamsById.get(mt.away_team_id);
             return (
-              <div key={mt.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/40">
-                <span className="text-xs text-muted-foreground w-16 shrink-0">{mt.round_label}</span>
+              <div key={mt.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground w-14 shrink-0 font-semibold">{mt.round_label}</span>
                 <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                   <span className="font-medium text-sm truncate">{home?.name}</span>
-                  <span className="text-lg shrink-0">{home?.flag}</span>
+                  <span className="text-xl shrink-0">{home?.flag}</span>
                 </div>
-                <Input
-                  type="number" min={0} max={20} disabled={locked}
+                <ScoreInput
+                  disabled={locked}
                   value={scores[mt.id]?.h ?? ""}
-                  onChange={(e) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], h: e.target.value } }))}
-                  className="w-12 text-center"
+                  onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], h: v } }))}
                 />
-                <span className="text-muted-foreground">x</span>
-                <Input
-                  type="number" min={0} max={20} disabled={locked}
+                <span className="text-muted-foreground text-xs">×</span>
+                <ScoreInput
+                  disabled={locked}
                   value={scores[mt.id]?.a ?? ""}
-                  onChange={(e) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: e.target.value } }))}
-                  className="w-12 text-center"
+                  onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))}
                 />
                 <div className="flex-1 flex items-center gap-2 min-w-0">
-                  <span className="text-lg shrink-0">{away?.flag}</span>
+                  <span className="text-xl shrink-0">{away?.flag}</span>
                   <span className="font-medium text-sm truncate">{away?.name}</span>
                 </div>
               </div>
@@ -291,22 +328,20 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
               const home = teamsById.get(mt.home_team_id);
               const away = teamsById.get(mt.away_team_id);
               return (
-                <div key={mt.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/40">
+                <div key={mt.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                   <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                     <span className="font-medium text-sm truncate">{home?.name}</span>
-                    <span className="text-lg shrink-0">{home?.flag}</span>
+                    <span className="text-xl shrink-0">{home?.flag}</span>
                   </div>
-                  <Input type="number" min={0} max={20} disabled={locked}
+                  <ScoreInput disabled={locked}
                     value={scores[mt.id]?.h ?? ""}
-                    onChange={(e) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], h: e.target.value } }))}
-                    className="w-12 text-center" />
-                  <span className="text-muted-foreground">x</span>
-                  <Input type="number" min={0} max={20} disabled={locked}
+                    onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], h: v } }))} />
+                  <span className="text-muted-foreground text-xs">×</span>
+                  <ScoreInput disabled={locked}
                     value={scores[mt.id]?.a ?? ""}
-                    onChange={(e) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: e.target.value } }))}
-                    className="w-12 text-center" />
+                    onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))} />
                   <div className="flex-1 flex items-center gap-2 min-w-0">
-                    <span className="text-lg shrink-0">{away?.flag}</span>
+                    <span className="text-xl shrink-0">{away?.flag}</span>
                     <span className="font-medium text-sm truncate">{away?.name}</span>
                   </div>
                 </div>
