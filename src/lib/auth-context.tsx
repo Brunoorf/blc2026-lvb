@@ -27,6 +27,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+    const finishLoading = () => { if (!cancelled) setLoading(false); };
+
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
       setSession(sess);
       setUser(sess?.user ?? null);
@@ -37,18 +40,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setIsAdmin(false);
       }
+      finishLoading();
     });
 
-    supabase.auth.getSession().then(({ data: { session: sess } }) => {
-      setSession(sess);
-      setUser(sess?.user ?? null);
-      if (sess?.user) {
-        loadUserData(sess.user.id);
-      }
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session: sess } }) => {
+        if (cancelled) return;
+        setSession(sess);
+        setUser(sess?.user ?? null);
+        if (sess?.user) loadUserData(sess.user.id);
+      })
+      .catch((err) => console.error("[auth] getSession failed", err))
+      .finally(finishLoading);
 
-    return () => sub.subscription.unsubscribe();
+    // Safety fallback: never stay stuck on loading screen
+    const timeout = setTimeout(finishLoading, 3000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   async function loadUserData(userId: string) {
