@@ -33,8 +33,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               const active = pathname === n.to;
               return (
                 <Link key={n.to} to={n.to} className={cn(
-                  "px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2",
-                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                  "relative px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2",
+                  active
+                    ? "text-primary-foreground bg-primary shadow-md scale-[1.02]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted",
                 )}>
                   <n.icon className="h-4 w-4" />
                   {n.label}
