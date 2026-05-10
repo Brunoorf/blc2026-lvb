@@ -34,19 +34,19 @@ export default function TeamFlag({
   size = 24,
   className = "",
 }: {
-  code: string;
-  fallback?: string;
+  code?: string | null;
+  fallback?: string | null;
   size?: number;
   className?: string;
 }) {
-  const iso = getIsoCode(code);
+  const iso = getIsoCode(code || "");
   const w = Math.round(size * 1.5); // flags are ~3:2 ratio
   const src = `https://flagcdn.com/w${w >= 40 ? 80 : 40}/${iso}.png`;
 
   return (
     <img
       src={src}
-      alt={code}
+      alt={code ?? ""}
       width={size}
       height={Math.round(size * 0.67)}
       className={`inline-block rounded-sm object-cover ${className}`}
@@ -54,7 +54,7 @@ export default function TeamFlag({
       onError={(e) => {
         // Fallback to emoji if image fails
         const span = document.createElement("span");
-        span.textContent = fallback ?? code;
+        span.textContent = fallback ?? code ?? "";
         span.style.fontSize = `${size * 0.8}px`;
         (e.target as HTMLElement).replaceWith(span);
       }}
