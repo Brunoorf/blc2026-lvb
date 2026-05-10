@@ -20,6 +20,12 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Secrets & credentials
+senhaspb.txt
+.env
+.env.*
+scripts/checkDB.js
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

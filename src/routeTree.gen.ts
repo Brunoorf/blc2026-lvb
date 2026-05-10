@@ -8,89 +8,89 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as RegrasRouteImport } from './routes/regras'
-import { Route as RankingRouteImport } from './routes/ranking'
-import { Route as PalpitesRouteImport } from './routes/palpites'
-import { Route as ChaveamentoRouteImport } from './routes/chaveamento'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as rootRouteImport } from "./routes/__root"
+import { Route as RegrasRouteImport } from "./routes/regras"
+import { Route as RankingRouteImport } from "./routes/ranking"
+import { Route as PalpitesRouteImport } from "./routes/palpites"
+import { Route as ChaveamentoRouteImport } from "./routes/chaveamento"
+import { Route as AdminRouteImport } from "./routes/admin"
+import { Route as IndexRouteImport } from "./routes/index"
 
 const RegrasRoute = RegrasRouteImport.update({
-  id: '/regras',
-  path: '/regras',
+  id: "/regras",
+  path: "/regras",
   getParentRoute: () => rootRouteImport,
 } as any)
 const RankingRoute = RankingRouteImport.update({
-  id: '/ranking',
-  path: '/ranking',
+  id: "/ranking",
+  path: "/ranking",
   getParentRoute: () => rootRouteImport,
 } as any)
 const PalpitesRoute = PalpitesRouteImport.update({
-  id: '/palpites',
-  path: '/palpites',
+  id: "/palpites",
+  path: "/palpites",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChaveamentoRoute = ChaveamentoRouteImport.update({
-  id: '/chaveamento',
-  path: '/chaveamento',
+  id: "/chaveamento",
+  path: "/chaveamento",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+  id: "/admin",
+  path: "/admin",
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/chaveamento': typeof ChaveamentoRoute
-  '/palpites': typeof PalpitesRoute
-  '/ranking': typeof RankingRoute
-  '/regras': typeof RegrasRoute
+  "/": typeof IndexRoute
+  "/admin": typeof AdminRoute
+  "/chaveamento": typeof ChaveamentoRoute
+  "/palpites": typeof PalpitesRoute
+  "/ranking": typeof RankingRoute
+  "/regras": typeof RegrasRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/chaveamento': typeof ChaveamentoRoute
-  '/palpites': typeof PalpitesRoute
-  '/ranking': typeof RankingRoute
-  '/regras': typeof RegrasRoute
+  "/": typeof IndexRoute
+  "/admin": typeof AdminRoute
+  "/chaveamento": typeof ChaveamentoRoute
+  "/palpites": typeof PalpitesRoute
+  "/ranking": typeof RankingRoute
+  "/regras": typeof RegrasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/chaveamento': typeof ChaveamentoRoute
-  '/palpites': typeof PalpitesRoute
-  '/ranking': typeof RankingRoute
-  '/regras': typeof RegrasRoute
+  "/": typeof IndexRoute
+  "/admin": typeof AdminRoute
+  "/chaveamento": typeof ChaveamentoRoute
+  "/palpites": typeof PalpitesRoute
+  "/ranking": typeof RankingRoute
+  "/regras": typeof RegrasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/admin'
-    | '/chaveamento'
-    | '/palpites'
-    | '/ranking'
-    | '/regras'
+    | "/"
+    | "/admin"
+    | "/chaveamento"
+    | "/palpites"
+    | "/ranking"
+    | "/regras"
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/chaveamento' | '/palpites' | '/ranking' | '/regras'
+  to: "/" | "/admin" | "/chaveamento" | "/palpites" | "/ranking" | "/regras"
   id:
-    | '__root__'
-    | '/'
-    | '/admin'
-    | '/chaveamento'
-    | '/palpites'
-    | '/ranking'
-    | '/regras'
+    | "__root__"
+    | "/"
+    | "/admin"
+    | "/chaveamento"
+    | "/palpites"
+    | "/ranking"
+    | "/regras"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -102,47 +102,47 @@ export interface RootRouteChildren {
   RegrasRoute: typeof RegrasRoute
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/regras': {
-      id: '/regras'
-      path: '/regras'
-      fullPath: '/regras'
+    "/regras": {
+      id: "/regras"
+      path: "/regras"
+      fullPath: "/regras"
       preLoaderRoute: typeof RegrasRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/ranking': {
-      id: '/ranking'
-      path: '/ranking'
-      fullPath: '/ranking'
+    "/ranking": {
+      id: "/ranking"
+      path: "/ranking"
+      fullPath: "/ranking"
       preLoaderRoute: typeof RankingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/palpites': {
-      id: '/palpites'
-      path: '/palpites'
-      fullPath: '/palpites'
+    "/palpites": {
+      id: "/palpites"
+      path: "/palpites"
+      fullPath: "/palpites"
       preLoaderRoute: typeof PalpitesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/chaveamento': {
-      id: '/chaveamento'
-      path: '/chaveamento'
-      fullPath: '/chaveamento'
+    "/chaveamento": {
+      id: "/chaveamento"
+      path: "/chaveamento"
+      fullPath: "/chaveamento"
       preLoaderRoute: typeof ChaveamentoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
+    "/admin": {
+      id: "/admin"
+      path: "/admin"
+      fullPath: "/admin"
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
+    "/": {
+      id: "/"
+      path: "/"
+      fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -160,12 +160,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

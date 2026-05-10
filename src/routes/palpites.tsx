@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Lock, Save, Trophy, Users } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
+import TeamFlag from "@/components/TeamFlag";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Minus, Plus } from "lucide-react";
@@ -62,7 +63,7 @@ function PalpitesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["palpites", user?.id],
     queryFn: async () => {
       const [groups, teams, matches, preds, settings, special] = await Promise.all([
@@ -73,6 +74,11 @@ function PalpitesPage() {
         supabase.from("tournament_settings").select("*").maybeSingle(),
         supabase.from("special_predictions").select("*").eq("user_id", user!.id).maybeSingle(),
       ]);
+
+      if (groups.error) throw groups.error;
+      if (teams.error) throw teams.error;
+      if (matches.error) throw matches.error;
+
       return {
         groups: groups.data ?? [],
         teams: teams.data ?? [],
@@ -94,6 +100,7 @@ function PalpitesPage() {
   const groupLocked = data?.settings?.group_picks_locked ?? false;
 
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
+  if (error) return <div className="text-center py-12 text-red-500 font-bold">Erro ao carregar dados: {error.message}</div>;
 
   return (
     <div className="space-y-6">
@@ -124,7 +131,10 @@ function PalpitesPage() {
               preds={data?.preds ?? []}
               teamsById={teamsById}
               locked={groupLocked}
-              onSaved={() => qc.invalidateQueries({ queryKey: ["palpites"] })}
+              onSaved={() => {
+                qc.invalidateQueries({ queryKey: ["palpites"] });
+                qc.invalidateQueries({ queryKey: ["bracket"] });
+              }}
             />
           ))}
         </TabsContent>
@@ -136,7 +146,10 @@ function PalpitesPage() {
             teamsById={teamsById}
             locked={data?.settings?.knockout_picks_locked ?? false}
             phaseOpen={data?.settings?.current_phase === "knockout"}
-            onSaved={() => qc.invalidateQueries({ queryKey: ["palpites"] })}
+            onSaved={() => {
+              qc.invalidateQueries({ queryKey: ["palpites"] });
+              qc.invalidateQueries({ queryKey: ["bracket"] });
+            }}
           />
         </TabsContent>
 
@@ -220,7 +233,7 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, onSaved }
                 <span className="text-[10px] uppercase tracking-wide text-muted-foreground w-14 shrink-0 font-semibold">{mt.round_label}</span>
                 <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                   <span className="font-medium text-sm truncate">{home?.name}</span>
-                  <span className="text-xl shrink-0">{home?.flag}</span>
+                  <TeamFlag code={home?.code} fallback={home?.flag} size={24} />
                 </div>
                 <ScoreInput
                   disabled={locked}
@@ -234,7 +247,7 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, onSaved }
                   onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))}
                 />
                 <div className="flex-1 flex items-center gap-2 min-w-0">
-                  <span className="text-xl shrink-0">{away?.flag}</span>
+                  <TeamFlag code={away?.code} fallback={away?.flag} size={24} />
                   <span className="font-medium text-sm truncate">{away?.name}</span>
                 </div>
               </div>
@@ -254,7 +267,7 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, onSaved }
               return (
                 <div key={s.team_id} className={`flex items-center gap-2 p-2 rounded-md text-sm ${advances ? "bg-primary/10 border border-primary/30" : third ? "bg-accent/10 border border-accent/30" : "bg-muted/40"}`}>
                   <span className="w-5 text-center text-xs font-bold text-muted-foreground">{idx + 1}º</span>
-                  <span>{t?.flag}</span>
+                  <TeamFlag code={t?.code} fallback={t?.flag} size={20} />
                   <span className="flex-1 truncate font-medium">{t?.name}</span>
                   <span className="text-xs text-muted-foreground w-10 text-right">{s.gf}:{s.ga}</span>
                   <span className="font-bold w-6 text-right">{s.points}</span>
@@ -331,7 +344,7 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
                 <div key={mt.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                   <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                     <span className="font-medium text-sm truncate">{home?.name}</span>
-                    <span className="text-xl shrink-0">{home?.flag}</span>
+                    <TeamFlag code={home?.code} fallback={home?.flag} size={24} />
                   </div>
                   <ScoreInput disabled={locked}
                     value={scores[mt.id]?.h ?? ""}
@@ -341,7 +354,7 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
                     value={scores[mt.id]?.a ?? ""}
                     onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))} />
                   <div className="flex-1 flex items-center gap-2 min-w-0">
-                    <span className="text-xl shrink-0">{away?.flag}</span>
+                    <TeamFlag code={away?.code} fallback={away?.flag} size={24} />
                     <span className="font-medium text-sm truncate">{away?.name}</span>
                   </div>
                 </div>
@@ -401,7 +414,7 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
             <SelectTrigger><SelectValue placeholder="Escolha uma seleção" /></SelectTrigger>
             <SelectContent className="max-h-72">
               {teams.map((t: any) => (
-                <SelectItem key={t.id} value={t.id}>{t.flag} {t.name}</SelectItem>
+                <SelectItem key={t.id} value={t.id}><TeamFlag code={t.code} fallback={t.flag} size={16} className="mr-1" /> {t.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>

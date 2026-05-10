@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Shield, Save, Calculator, AlertTriangle } from "lucide-react";
+import { Shield, Save, Calculator, AlertTriangle, Users, Plus, Trash2 } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
+import TeamFlag from "@/components/TeamFlag";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,26 +44,29 @@ function AdminPanel() {
         <h1 className="text-3xl font-bold flex items-center gap-2"><Shield className="h-7 w-7 text-accent" /> Painel administrativo</h1>
         <p className="text-muted-foreground text-sm">Gerencie o torneio, regras, resultados e recalcule pontuações.</p>
       </div>
-
       <Tabs defaultValue="tournament">
         <TabsList className="w-full overflow-x-auto justify-start">
           <TabsTrigger value="tournament">Torneio</TabsTrigger>
-          <TabsTrigger value="rules">Regras de pontuação</TabsTrigger>
-          <TabsTrigger value="results">Resultados oficiais</TabsTrigger>
+          <TabsTrigger value="rules">Pontuação</TabsTrigger>
+          <TabsTrigger value="results">Resultados</TabsTrigger>
+          <TabsTrigger value="knockout">Montar Mata-Mata</TabsTrigger>
           <TabsTrigger value="teams">Seleções</TabsTrigger>
-          <TabsTrigger value="recompute">Recalcular pontos</TabsTrigger>
+          <TabsTrigger value="users">Usuários</TabsTrigger>
+          <TabsTrigger value="recompute">Recalcular</TabsTrigger>
         </TabsList>
-
         <TabsContent value="tournament" className="mt-6"><TournamentTab /></TabsContent>
         <TabsContent value="rules" className="mt-6"><RulesTab /></TabsContent>
         <TabsContent value="results" className="mt-6"><ResultsTab /></TabsContent>
+        <TabsContent value="knockout" className="mt-6"><KnockoutBuilderTab /></TabsContent>
         <TabsContent value="teams" className="mt-6"><TeamsTab /></TabsContent>
+        <TabsContent value="users" className="mt-6"><UsersTab /></TabsContent>
         <TabsContent value="recompute" className="mt-6"><RecomputeTab /></TabsContent>
       </Tabs>
     </div>
   );
 }
 
+/* ── Tournament Settings ── */
 function TournamentTab() {
   const qc = useQueryClient();
   const { data } = useQuery({
@@ -73,11 +78,7 @@ function TournamentTab() {
   const [koLocked, setKoLocked] = useState(data?.knockout_picks_locked ?? false);
 
   useEffect(() => {
-    if (data) {
-      setPhase(data.current_phase);
-      setGroupLocked(data.group_picks_locked);
-      setKoLocked(data.knockout_picks_locked);
-    }
+    if (data) { setPhase(data.current_phase); setGroupLocked(data.group_picks_locked); setKoLocked(data.knockout_picks_locked); }
   }, [data]);
 
   async function save() {
@@ -103,17 +104,11 @@ function TournamentTab() {
         </Select>
       </div>
       <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40">
-        <div>
-          <p className="font-medium">Travar palpites de grupos</p>
-          <p className="text-xs text-muted-foreground">Usuários não poderão mais editar.</p>
-        </div>
+        <div><p className="font-medium">Travar palpites de grupos</p><p className="text-xs text-muted-foreground">Usuários não poderão mais editar.</p></div>
         <Switch checked={groupLocked} onCheckedChange={setGroupLocked} />
       </div>
       <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40">
-        <div>
-          <p className="font-medium">Travar palpites do mata-mata</p>
-          <p className="text-xs text-muted-foreground">Usuários não poderão mais editar.</p>
-        </div>
+        <div><p className="font-medium">Travar palpites do mata-mata</p><p className="text-xs text-muted-foreground">Usuários não poderão mais editar.</p></div>
         <Switch checked={koLocked} onCheckedChange={setKoLocked} />
       </div>
       <Button onClick={save} className="w-full"><Save className="h-4 w-4 mr-2" /> Salvar</Button>
@@ -121,6 +116,7 @@ function TournamentTab() {
   );
 }
 
+/* ── Scoring Rules ── */
 function RulesTab() {
   const qc = useQueryClient();
   const { data } = useQuery({
@@ -128,7 +124,6 @@ function RulesTab() {
     queryFn: async () => (await supabase.from("scoring_rules").select("*").order("rule_key")).data ?? [],
   });
   const [edits, setEdits] = useState<Record<string, number>>({});
-  const [newRule, setNewRule] = useState({ rule_key: "", label: "", points: 0, description: "" });
 
   async function updatePoints(id: string) {
     const value = edits[id];
@@ -139,52 +134,26 @@ function RulesTab() {
     qc.invalidateQueries({ queryKey: ["scoring-rules"] });
   }
 
-  async function addRule() {
-    if (!newRule.rule_key || !newRule.label) return toast.error("Preencha chave e rótulo.");
-    const { error } = await supabase.from("scoring_rules").insert(newRule);
-    if (error) return toast.error(error.message);
-    toast.success("Regra criada!");
-    setNewRule({ rule_key: "", label: "", points: 0, description: "" });
-    qc.invalidateQueries({ queryKey: ["scoring-rules"] });
-  }
-
   return (
-    <div className="space-y-4 max-w-3xl">
-      <Card className="p-5">
-        <h3 className="font-bold mb-3">Regras existentes</h3>
-        <div className="space-y-2">
-          {(data ?? []).map((r) => (
-            <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/40">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm">{r.label}</p>
-                <p className="text-xs text-muted-foreground">{r.rule_key}</p>
-              </div>
-              <Input
-                type="number"
-                defaultValue={r.points}
-                onChange={(e) => setEdits((s) => ({ ...s, [r.id]: parseInt(e.target.value) }))}
-                className="w-24"
-              />
-              <Button size="sm" variant="secondary" onClick={() => updatePoints(r.id)}>Salvar</Button>
+    <Card className="p-5 max-w-3xl">
+      <h3 className="font-bold mb-3">Regras de pontuação</h3>
+      <div className="space-y-2">
+        {(data ?? []).map((r) => (
+          <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/40">
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm">{r.label}</p>
+              <p className="text-xs text-muted-foreground">{r.description}</p>
             </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="p-5">
-        <h3 className="font-bold mb-3">Adicionar nova regra</h3>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <Input placeholder="rule_key (ex: hat_trick)" value={newRule.rule_key} onChange={(e) => setNewRule({ ...newRule, rule_key: e.target.value })} />
-          <Input placeholder="Rótulo visível" value={newRule.label} onChange={(e) => setNewRule({ ...newRule, label: e.target.value })} />
-          <Input type="number" placeholder="Pontos" value={newRule.points} onChange={(e) => setNewRule({ ...newRule, points: parseInt(e.target.value) || 0 })} />
-          <Input placeholder="Descrição" value={newRule.description} onChange={(e) => setNewRule({ ...newRule, description: e.target.value })} />
-        </div>
-        <Button onClick={addRule} className="mt-3 w-full">Adicionar regra</Button>
-      </Card>
-    </div>
+            <Input type="number" defaultValue={r.points} onChange={(e) => setEdits((s) => ({ ...s, [r.id]: parseInt(e.target.value) }))} className="w-24" />
+            <Button size="sm" variant="secondary" onClick={() => updatePoints(r.id)}>Salvar</Button>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
+/* ── Official Results ── */
 function ResultsTab() {
   const qc = useQueryClient();
   const { data } = useQuery({
@@ -203,27 +172,17 @@ function ResultsTab() {
   useEffect(() => {
     if (data) {
       const m: typeof scores = {};
-      data.matches.forEach((mt) => {
-        m[mt.id] = {
-          h: mt.home_score?.toString() ?? "",
-          a: mt.away_score?.toString() ?? "",
-          finished: mt.is_finished,
-        };
-      });
+      data.matches.forEach((mt) => { m[mt.id] = { h: mt.home_score?.toString() ?? "", a: mt.away_score?.toString() ?? "", finished: mt.is_finished }; });
       setScores(m);
     }
   }, [data]);
 
   async function saveMatch(id: string) {
     const s = scores[id];
-    const h = parseInt(s.h);
-    const a = parseInt(s.a);
+    const h = parseInt(s.h); const a = parseInt(s.a);
     const update: any = { is_finished: s.finished };
-    if (!Number.isNaN(h) && !Number.isNaN(a)) {
-      update.home_score = h; update.away_score = a;
-    } else {
-      update.home_score = null; update.away_score = null;
-    }
+    if (!Number.isNaN(h) && !Number.isNaN(a)) { update.home_score = h; update.away_score = a; }
+    else { update.home_score = null; update.away_score = null; }
     const { error } = await supabase.from("matches").update(update).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Resultado salvo!");
@@ -233,7 +192,7 @@ function ResultsTab() {
   return (
     <Card className="p-5 max-w-4xl">
       <h3 className="font-bold mb-3">Resultados oficiais</h3>
-      <p className="text-sm text-muted-foreground mb-4">Após editar, vá em "Recalcular pontos" para distribuir as pontuações.</p>
+      <p className="text-sm text-muted-foreground mb-4">Após editar, vá em "Recalcular" para distribuir as pontuações.</p>
       <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
         {(data?.matches ?? []).map((mt) => {
           const home = teamsById.get(mt.home_team_id ?? "");
@@ -244,13 +203,13 @@ function ResultsTab() {
               <span className="text-xs text-muted-foreground w-24 shrink-0">{mt.round_label}</span>
               <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                 <span className="text-sm truncate">{home?.name ?? "—"}</span>
-                <span>{home?.flag}</span>
+                <TeamFlag code={home?.code} fallback={home?.flag} size={20} />
               </div>
               <Input type="number" value={s.h} onChange={(e) => setScores((x) => ({ ...x, [mt.id]: { ...s, h: e.target.value } }))} className="w-12 text-center" />
               <span>x</span>
               <Input type="number" value={s.a} onChange={(e) => setScores((x) => ({ ...x, [mt.id]: { ...s, a: e.target.value } }))} className="w-12 text-center" />
               <div className="flex-1 flex items-center gap-2 min-w-0">
-                <span>{away?.flag}</span>
+                <TeamFlag code={away?.code} fallback={away?.flag} size={20} />
                 <span className="text-sm truncate">{away?.name ?? "—"}</span>
               </div>
               <label className="flex items-center gap-1 text-xs">
@@ -266,6 +225,135 @@ function ResultsTab() {
   );
 }
 
+/* ── Knockout Builder (NEW) ── */
+function KnockoutBuilderTab() {
+  const qc = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["ko-builder"],
+    queryFn: async () => {
+      const [teams, matches] = await Promise.all([
+        supabase.from("teams").select("*").order("name"),
+        supabase.from("matches").select("*").order("match_number"),
+      ]);
+      return { teams: teams.data ?? [], matches: matches.data ?? [] };
+    },
+  });
+
+  const koMatches = (data?.matches ?? []).filter((m) => m.phase !== "group");
+  const teamsById = new Map((data?.teams ?? []).map((t) => [t.id, t]));
+  const nextMatchNum = Math.max(0, ...(data?.matches ?? []).map((m) => m.match_number)) + 1;
+
+  const [newMatch, setNewMatch] = useState({ phase: "r32" as string, home: "", away: "", label: "" });
+
+  async function createMatch() {
+    if (!newMatch.home || !newMatch.away) return toast.error("Selecione os dois times.");
+    if (newMatch.home === newMatch.away) return toast.error("Selecione times diferentes.");
+    const { error } = await supabase.from("matches").insert({
+      phase: newMatch.phase as any,
+      round_label: newMatch.label || PHASE_LABEL[newMatch.phase as MatchPhase] || newMatch.phase,
+      match_number: nextMatchNum,
+      home_team_id: newMatch.home,
+      away_team_id: newMatch.away,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Jogo criado!");
+    setNewMatch({ phase: "r32", home: "", away: "", label: "" });
+    qc.invalidateQueries({ queryKey: ["ko-builder"] });
+  }
+
+  async function deleteMatch(id: string) {
+    const { error } = await supabase.from("matches").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Jogo removido!");
+    qc.invalidateQueries({ queryKey: ["ko-builder"] });
+  }
+
+  const phases: MatchPhase[] = ["r32", "r16", "qf", "sf", "final"];
+  const byPhase: Record<string, any[]> = {};
+  koMatches.forEach((m) => { (byPhase[m.phase] ??= []).push(m); });
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <Card className="p-5">
+        <h3 className="font-bold mb-1">Criar jogo do mata-mata</h3>
+        <p className="text-sm text-muted-foreground mb-4">Após a fase de grupos, adicione os jogos manualmente selecionando os times classificados.</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-sm font-medium mb-1 block">Fase</label>
+            <Select value={newMatch.phase} onValueChange={(v) => setNewMatch((s) => ({ ...s, phase: v }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {phases.map((p) => <SelectItem key={p} value={p}>{PHASE_LABEL[p]}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Rótulo (opcional)</label>
+            <Input placeholder="Ex: Jogo 1" value={newMatch.label} onChange={(e) => setNewMatch((s) => ({ ...s, label: e.target.value }))} />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Time da casa</label>
+            <Select value={newMatch.home} onValueChange={(v) => setNewMatch((s) => ({ ...s, home: v }))}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                {(data?.teams ?? []).map((t) => <SelectItem key={t.id} value={t.id}><TeamFlag code={t.code} fallback={t.flag} size={16} className="mr-1" /> {t.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Time visitante</label>
+            <Select value={newMatch.away} onValueChange={(v) => setNewMatch((s) => ({ ...s, away: v }))}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                {(data?.teams ?? []).map((t) => <SelectItem key={t.id} value={t.id}><TeamFlag code={t.code} fallback={t.flag} size={16} className="mr-1" /> {t.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <Button onClick={createMatch} className="mt-4 w-full"><Plus className="h-4 w-4 mr-2" /> Criar jogo</Button>
+      </Card>
+
+      {phases.map((phase) => {
+        const ms = byPhase[phase];
+        if (!ms || ms.length === 0) return null;
+        return (
+          <Card key={phase} className="p-5">
+            <h3 className="font-bold mb-3 flex items-center gap-2">
+              {PHASE_LABEL[phase]}
+              <Badge variant="secondary">{ms.length} jogos</Badge>
+            </h3>
+            <div className="space-y-2">
+              {ms.map((mt: any) => {
+                const home = teamsById.get(mt.home_team_id);
+                const away = teamsById.get(mt.away_team_id);
+                return (
+                  <div key={mt.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/40">
+                    <span className="text-xs text-muted-foreground w-20 shrink-0">{mt.round_label}</span>
+                    <span className="flex-1 text-sm text-right flex items-center justify-end gap-1"><TeamFlag code={home?.code} fallback={home?.flag} size={16} /> {home?.name ?? "—"}</span>
+                    <span className="text-xs text-muted-foreground">vs</span>
+                    <span className="flex-1 text-sm flex items-center gap-1"><TeamFlag code={away?.code} fallback={away?.flag} size={16} /> {away?.name ?? "—"}</span>
+                    {mt.is_finished && <Badge variant="outline" className="text-xs">Finalizado</Badge>}
+                    <Button size="sm" variant="ghost" onClick={() => deleteMatch(mt.id)} title="Remover">
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })}
+
+      {koMatches.length === 0 && (
+        <Card className="p-12 text-center border-dashed">
+          <p className="text-muted-foreground">Nenhum jogo do mata-mata criado ainda. Use o formulário acima para adicionar.</p>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/* ── Teams / Official Results ── */
 function TeamsTab() {
   const qc = useQueryClient();
   const { data } = useQuery({
@@ -292,25 +380,25 @@ function TeamsTab() {
   return (
     <Card className="p-5 max-w-4xl">
       <h3 className="font-bold mb-1">Trajetória oficial das seleções</h3>
-      <p className="text-sm text-muted-foreground mb-4">Marque até onde cada seleção chegou de fato. Necessário para calcular bônus de avanço, campeão e zebra.</p>
+      <p className="text-sm text-muted-foreground mb-4">Marque até onde cada seleção chegou. Necessário para calcular bônus.</p>
       <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-2">
         {(data?.teams ?? []).map((t) => {
           const r = resultsByTeam.get(t.id);
           return (
             <div key={t.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/40">
               <span className="w-7 text-center text-xs font-bold text-muted-foreground">{t.group_id}</span>
-              <span>{t.flag}</span>
+              <TeamFlag code={t.code} fallback={t.flag} size={20} />
               <span className="flex-1 text-sm font-medium">{t.name}</span>
               {t.is_top15 && <span className="text-[10px] px-1.5 rounded bg-primary/20 text-primary font-bold">TOP15</span>}
               <Select value={r?.reached_phase ?? "none"} onValueChange={(v) => setReached(t.id, v as any, r?.group_position ?? undefined)}>
                 <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Eliminada na fase de grupos</SelectItem>
-                  <SelectItem value="r32">Chegou aos 16-avos</SelectItem>
-                  <SelectItem value="r16">Chegou às oitavas</SelectItem>
-                  <SelectItem value="qf">Chegou às quartas</SelectItem>
-                  <SelectItem value="sf">Chegou às semis</SelectItem>
-                  <SelectItem value="final">Chegou à final</SelectItem>
+                  <SelectItem value="none">Eliminada nos grupos</SelectItem>
+                  <SelectItem value="r32">16-avos</SelectItem>
+                  <SelectItem value="r16">Oitavas</SelectItem>
+                  <SelectItem value="qf">Quartas</SelectItem>
+                  <SelectItem value="sf">Semis</SelectItem>
+                  <SelectItem value="final">Final</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={String(r?.group_position ?? 0)} onValueChange={(v) => setReached(t.id, (r?.reached_phase ?? "r32") as any, parseInt(v) || undefined)}>
@@ -331,6 +419,67 @@ function TeamsTab() {
   );
 }
 
+/* ── Users Management (NEW) ── */
+function UsersTab() {
+  const qc = useQueryClient();
+  const { user: currentUser } = useAuth();
+  const { data } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: async () => {
+      const [profiles, roles] = await Promise.all([
+        supabase.from("profiles").select("*").order("display_name"),
+        supabase.from("user_roles").select("*"),
+      ]);
+      return { profiles: profiles.data ?? [], roles: roles.data ?? [] };
+    },
+  });
+
+  const rolesByUser = new Map<string, string>();
+  (data?.roles ?? []).forEach((r) => rolesByUser.set(r.user_id, r.role));
+
+  async function toggleAdmin(userId: string, currentRole: string) {
+    const newRole = currentRole === "admin" ? "user" : "admin";
+    const { error } = await supabase.from("user_roles").update({ role: newRole }).eq("user_id", userId);
+    if (error) return toast.error("Erro: " + error.message);
+    toast.success(newRole === "admin" ? "Usuário promovido a admin!" : "Admin rebaixado a usuário.");
+    qc.invalidateQueries({ queryKey: ["admin-users"] });
+  }
+
+  return (
+    <Card className="p-5 max-w-3xl">
+      <h3 className="font-bold mb-1 flex items-center gap-2"><Users className="h-5 w-5" /> Gerenciar usuários</h3>
+      <p className="text-sm text-muted-foreground mb-4">Promova ou remova administradores.</p>
+      <div className="space-y-2">
+        {(data?.profiles ?? []).map((p) => {
+          const role = rolesByUser.get(p.id) ?? "user";
+          const isMe = p.id === currentUser?.id;
+          return (
+            <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/40">
+              {p.avatar_url ? (
+                <img src={p.avatar_url} alt="" className="h-9 w-9 rounded-full" />
+              ) : (
+                <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center font-bold text-sm">
+                  {p.display_name?.[0]?.toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{p.display_name} {isMe && <span className="text-xs text-primary">(você)</span>}</p>
+              </div>
+              <Badge variant={role === "admin" ? "default" : "secondary"}>{role}</Badge>
+              {!isMe && (
+                <Button size="sm" variant="outline" onClick={() => toggleAdmin(p.id, role)}>
+                  {role === "admin" ? "Remover admin" : "Promover"}
+                </Button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+/* ── Recompute Points ── */
 function RecomputeTab() {
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<string>("");
@@ -355,7 +504,7 @@ function RecomputeTab() {
       <Calculator className="h-10 w-10 text-primary mb-3" />
       <h3 className="font-bold text-lg mb-2">Recalcular pontuação de todos</h3>
       <p className="text-sm text-muted-foreground mb-4">
-        Use após inserir resultados oficiais ou alterar regras. O cálculo varre todas as previsões e atualiza os pontos de cada usuário.
+        Use após inserir resultados oficiais ou alterar regras.
       </p>
       <Button onClick={run} disabled={running} className="w-full">{running ? "Processando..." : "Recalcular agora"}</Button>
       {log && <pre className="mt-4 p-3 bg-muted/40 rounded-md text-xs whitespace-pre-wrap">{log}</pre>}
