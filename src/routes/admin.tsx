@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Shield, Save, Calculator, AlertTriangle, Users, Plus, Trash2 } from "lucide-react";
+import { Shield, Save, Calculator, AlertTriangle, Users, Plus, Trash2, GitBranch } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import TeamFlag from "@/components/TeamFlag";
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { recomputeAllPoints } from "@/lib/recompute";
 import { PHASE_LABEL, type MatchPhase } from "@/lib/scoring";
+import { computeGroupStandings } from "@/lib/group-table";
 
 export const Route = createFileRoute("/admin")({
   component: () => <AuthGate><AdminGate /></AuthGate>,
@@ -268,12 +269,94 @@ function KnockoutBuilderTab() {
     qc.invalidateQueries({ queryKey: ["ko-builder"] });
   }
 
+  async function autoGenerateR32() {
+    if (!confirm("Isso irá gerar os 16 jogos de 16-avos baseados na classificação atual dos grupos (resultados oficiais). Continuar?")) return;
+    
+    const teams = data?.teams ?? [];
+    const groupMatches = (data?.matches ?? []).filter(m => m.phase === 'group');
+    
+    const groupIds = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+    const standings: Record<string, any[]> = {};
+    const thirds: { group: string; points: number; gd: number; gf: number; team_id: string }[] = [];
+
+    for (const gid of groupIds) {
+      const groupTeams = teams.filter((t) => t.group_id === gid).map((t) => t.id);
+      const mForGroup = groupMatches
+        .filter((m) => m.group_id === gid && m.home_team_id && m.away_team_id && m.home_score !== null && m.away_score !== null)
+        .map(m => ({
+          home_team_id: m.home_team_id as string,
+          away_team_id: m.away_team_id as string,
+          home_score: m.home_score as number,
+          away_score: m.away_score as number
+        }));
+      const s = computeGroupStandings(groupTeams, mForGroup);
+      standings[gid] = s;
+      if (s[2]) thirds.push({ group: gid, ...s[2] });
+    }
+    thirds.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
+    const bestThirds = thirds.slice(0, 8).map((t) => t.group);
+
+    function getTeam(pos: string, gidOrIndex: string) {
+      if (pos === "3") {
+         const idx = parseInt(gidOrIndex);
+         const g = bestThirds[idx];
+         return standings[g]?.[2]?.team_id ?? null;
+      }
+      return standings[gidOrIndex]?.[parseInt(pos)-1]?.team_id ?? null;
+    }
+
+    const PAIRINGS = [
+      { h: ["1","E"], a: ["3","0"], lbl: "16-avos 1" },
+      { h: ["1","H"], a: ["3","1"], lbl: "16-avos 2" },
+      { h: ["2","A"], a: ["2","B"], lbl: "16-avos 3" },
+      { h: ["1","F"], a: ["2","C"], lbl: "16-avos 4" },
+      { h: ["2","K"], a: ["2","L"], lbl: "16-avos 5" },
+      { h: ["1","I"], a: ["2","J"], lbl: "16-avos 6" },
+      { h: ["1","D"], a: ["3","2"], lbl: "16-avos 7" },
+      { h: ["1","G"], a: ["3","3"], lbl: "16-avos 8" },
+      { h: ["1","C"], a: ["2","F"], lbl: "16-avos 9" },
+      { h: ["2","E"], a: ["2","I"], lbl: "16-avos 10" },
+      { h: ["1","A"], a: ["3","4"], lbl: "16-avos 11" },
+      { h: ["1","L"], a: ["3","5"], lbl: "16-avos 12" },
+      { h: ["1","J"], a: ["2","H"], lbl: "16-avos 13" },
+      { h: ["2","D"], a: ["2","G"], lbl: "16-avos 14" },
+      { h: ["1","B"], a: ["3","6"], lbl: "16-avos 15" },
+      { h: ["1","K"], a: ["3","7"], lbl: "16-avos 16" },
+    ];
+
+    const toInsert = PAIRINGS.map((p, i) => ({
+      phase: "r32" as const,
+      round_label: p.lbl,
+      match_number: nextMatchNum + i,
+      home_team_id: getTeam(p.h[0], p.h[1]),
+      away_team_id: getTeam(p.a[0], p.a[1])
+    })).filter(m => m.home_team_id && m.away_team_id);
+
+    if (toInsert.length !== 16) {
+       toast.error(`Foram encontrados apenas ${toInsert.length} cruzamentos possíveis. Confira se os resultados dos grupos estão completos.`);
+       if (toInsert.length === 0) return;
+    }
+
+    const { error } = await supabase.from("matches").insert(toInsert);
+    if (error) return toast.error(error.message);
+    toast.success(`${toInsert.length} jogos de 16-avos gerados com sucesso!`);
+    qc.invalidateQueries({ queryKey: ["ko-builder"] });
+  }
+
   const phases: MatchPhase[] = ["r32", "r16", "qf", "sf", "final"];
   const byPhase: Record<string, any[]> = {};
   koMatches.forEach((m) => { (byPhase[m.phase] ??= []).push(m); });
 
   return (
     <div className="space-y-6 max-w-4xl">
+      <Card className="p-5 border-primary/50 bg-primary/5">
+        <h3 className="font-bold mb-2 flex items-center gap-2 text-primary">Simulação do Chaveamento Oficial</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Gere os 16 cruzamentos iniciais automaticamente com base na classificação dos 12 grupos.
+        </p>
+        <Button onClick={autoGenerateR32} className="w-full sm:w-auto"><GitBranch className="h-4 w-4 mr-2" /> Gerar 16-Avos Automaticamente</Button>
+      </Card>
+      
       <Card className="p-5">
         <h3 className="font-bold mb-1">Criar jogo do mata-mata</h3>
         <p className="text-sm text-muted-foreground mb-4">Após a fase de grupos, adicione os jogos manualmente selecionando os times classificados.</p>

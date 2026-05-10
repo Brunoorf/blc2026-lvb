@@ -20,26 +20,26 @@ export const Route = createFileRoute("/chaveamento")({
 
 // Left bracket (8 R32 matches)
 const LEFT_R32: [string, string][][] = [
-  [["1","E"], ["3",""]],   // R32-L1
-  [["1","H"], ["3",""]],   // R32-L2
+  [["1","E"], ["3","0"]],   // R32-L1
+  [["1","H"], ["3","1"]],   // R32-L2
   [["2","A"], ["2","B"]],  // R32-L3
   [["1","F"], ["2","C"]],  // R32-L4
   [["2","K"], ["2","L"]],  // R32-L5
   [["1","I"], ["2","J"]],  // R32-L6
-  [["1","D"], ["3",""]],   // R32-L7
-  [["1","G"], ["3",""]],   // R32-L8
+  [["1","D"], ["3","2"]],   // R32-L7
+  [["1","G"], ["3","3"]],   // R32-L8
 ];
 
 // Right bracket (8 R32 matches) - mirrored
 const RIGHT_R32: [string, string][][] = [
   [["1","C"], ["2","F"]],  // R32-R1
   [["2","E"], ["2","I"]],  // R32-R2
-  [["1","A"], ["3",""]],   // R32-R3
-  [["1","L"], ["3",""]],   // R32-R4
+  [["1","A"], ["3","4"]],   // R32-R3
+  [["1","L"], ["3","5"]],   // R32-R4
   [["1","J"], ["2","H"]],  // R32-R5
   [["2","D"], ["2","G"]],  // R32-R6
-  [["1","B"], ["3",""]],   // R32-R7
-  [["1","K"], ["3",""]],   // R32-R8
+  [["1","B"], ["3","6"]],   // R32-R7
+  [["1","K"], ["3","7"]],   // R32-R8
 ];
 
 /* ------------------------------------------------------------------ */
@@ -87,12 +87,22 @@ function BracketPage() {
   }, [data]);
 
   // Resolve a bracket slot to a team object (or null)
-  function resolveSlot(pos: string, groupId: string): any | null {
-    if (!groupId || pos === "3") {
-      // 3rd place - we just show "3º" placeholder for now
-      return null;
+  function resolveSlot(pos: string, groupIdOrIndex: string): any | null {
+    if (pos === "3") {
+      // 3rd place logic: groupIdOrIndex is the index in bestThirds array (0 to 7)
+      const idx = parseInt(groupIdOrIndex);
+      if (isNaN(idx) || idx < 0 || idx >= bestThirds.length) return null;
+      
+      const groupId = bestThirds[idx];
+      const standings = groupStandings[groupId];
+      if (!standings || !standings[2]) return null;
+      
+      return teamsById.get(standings[2].team_id) ?? null;
     }
-    const standings = groupStandings[groupId];
+
+    if (!groupIdOrIndex) return null;
+    
+    const standings = groupStandings[groupIdOrIndex];
     if (!standings) return null;
     const idx = parseInt(pos) - 1; // "1" → index 0, "2" → index 1
     const entry = standings[idx];
