@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Medal } from "lucide-react";
+import { Trophy, Medal, Star } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,19 +15,34 @@ function Ranking() {
   const { data, isLoading } = useQuery({
     queryKey: ["ranking"],
     queryFn: async () => {
-      // Ranking is computed from points stored on each prediction row.
-      const [profiles, preds, ko, special] = await Promise.all([
+      const [profiles, preds, ko, special, teams] = await Promise.all([
         supabase.from("profiles").select("id, display_name, avatar_url"),
         supabase.from("predictions").select("user_id, points_awarded"),
         supabase.from("knockout_predictions").select("user_id, points_awarded"),
-        supabase.from("special_predictions").select("user_id, points_awarded"),
+        supabase.from("special_predictions").select("*"),
+        supabase.from("teams").select("*"),
       ]);
       const totals = new Map<string, number>();
       const add = (rows: any[] | null) => rows?.forEach((r) => totals.set(r.user_id, (totals.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
       add(preds.data); add(ko.data); add(special.data);
-      return (profiles.data ?? []).map((p) => ({
-        ...p, points: totals.get(p.id) ?? 0,
-      })).sort((a, b) => b.points - a.points);
+      
+      const specialByUserId = new Map((special.data ?? []).map((s) => [s.user_id, s]));
+      const teamsById = new Map((teams.data ?? []).map((t) => [t.id, t]));
+
+      return (profiles.data ?? []).map((p) => {
+        const sp = specialByUserId.get(p.id);
+        const champion = sp?.champion_team_id ? teamsById.get(sp.champion_team_id) : null;
+        const underdog = sp?.underdog_team_id ? teamsById.get(sp.underdog_team_id) : null;
+        return {
+          ...p, 
+          points: totals.get(p.id) ?? 0,
+          special: {
+            champion: champion?.name ?? "",
+            underdog: underdog?.name ?? "",
+            topScorer: sp?.top_scorer ?? ""
+          }
+        };
+      }).sort((a, b) => b.points - a.points);
     },
   });
 
@@ -54,7 +69,7 @@ function Ranking() {
                     {idx < 3 ? <Medal className={`h-5 w-5 mx-auto ${medal}`} /> : <span className="text-muted-foreground">{idx + 1}</span>}
                   </div>
                   {row.avatar_url ? (
-                    <img src={row.avatar_url} alt="" className="h-9 w-9 rounded-full" />
+                    <img src={row.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
                   ) : (
                     <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center font-bold text-sm">
                       {row.display_name?.[0]?.toUpperCase()}
@@ -62,6 +77,12 @@ function Ranking() {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold truncate">{row.display_name} {isMe && <span className="text-xs text-primary">(você)</span>}</p>
+                    {(row.special.champion || row.special.underdog) && (
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        {row.special.champion && <span title="Aposta de Campeão" className="flex items-center gap-1"><Trophy className="h-3 w-3 text-accent" /> {row.special.champion}</span>}
+                        {row.special.underdog && <span title="Aposta de Zebra" className="flex items-center gap-1"><Star className="h-3 w-3" /> {row.special.underdog}</span>}
+                      </div>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-lg">{row.points}</p>

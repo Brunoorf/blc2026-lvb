@@ -289,11 +289,11 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
   // Match predictions for KO matches that already have teams set by admin
   const playable = matches.filter((m: any) => m.home_team_id && m.away_team_id);
 
-  const [scores, setScores] = useState<Record<string, { h: string; a: string }>>(() => {
-    const m: Record<string, { h: string; a: string }> = {};
+  const [scores, setScores] = useState<Record<string, { h: string; a: string; adv: string }>>(() => {
+    const m: Record<string, { h: string; a: string; adv: string }> = {};
     playable.forEach((mt: any) => {
       const p = preds.find((x: any) => x.match_id === mt.id);
-      m[mt.id] = { h: p ? String(p.home_score) : "", a: p ? String(p.away_score) : "" };
+      m[mt.id] = { h: p ? String(p.home_score) : "", a: p ? String(p.away_score) : "", adv: p?.advancing_team_id || "" };
     });
     return m;
   });
@@ -310,15 +310,31 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
 
   async function handleSave() {
     const { data: { user } } = await supabase.auth.getUser();
+    
+    // Check if any draw is missing advancing team
+    for (const mt of playable) {
+      const s = scores[mt.id];
+      if (s?.h !== "" && s?.a !== "" && s?.h === s?.a && !s?.adv) {
+         return toast.error("Por favor, selecione quem avança nos jogos empatados.");
+      }
+    }
+
     const payload = playable
       .map((mt: any) => {
         const s = scores[mt.id];
         const h = parseInt(s?.h ?? "");
         const a = parseInt(s?.a ?? "");
         if (Number.isNaN(h) || Number.isNaN(a)) return null;
-        return { user_id: user!.id, match_id: mt.id, home_score: h, away_score: a };
+        return { 
+          user_id: user!.id, 
+          match_id: mt.id, 
+          home_score: h, 
+          away_score: a,
+          advancing_team_id: h === a ? (s.adv || null) : null
+        };
       })
       .filter(Boolean);
+      
     if (payload.length === 0) return toast.info("Preencha algum palpite.");
     const { error } = await supabase.from("predictions").upsert(payload as any[], { onConflict: "user_id,match_id" });
     if (error) return toast.error(error.message);
@@ -341,22 +357,42 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
               const home = teamsById.get(mt.home_team_id);
               const away = teamsById.get(mt.away_team_id);
               return (
-                <div key={mt.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-                    <span className="font-medium text-sm truncate">{home?.name}</span>
-                    <TeamFlag code={home?.code} fallback={home?.flag} size={24} />
+                <div key={mt.id} className="flex flex-col gap-2 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                      <span className="font-medium text-sm truncate">{home?.name}</span>
+                      <TeamFlag code={home?.code} fallback={home?.flag} size={24} />
+                    </div>
+                    <ScoreInput disabled={locked}
+                      value={scores[mt.id]?.h ?? ""}
+                      onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], h: v } }))} />
+                    <span className="text-muted-foreground text-xs">×</span>
+                    <ScoreInput disabled={locked}
+                      value={scores[mt.id]?.a ?? ""}
+                      onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))} />
+                    <div className="flex-1 flex items-center gap-2 min-w-0">
+                      <TeamFlag code={away?.code} fallback={away?.flag} size={24} />
+                      <span className="font-medium text-sm truncate">{away?.name}</span>
+                    </div>
                   </div>
-                  <ScoreInput disabled={locked}
-                    value={scores[mt.id]?.h ?? ""}
-                    onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], h: v } }))} />
-                  <span className="text-muted-foreground text-xs">×</span>
-                  <ScoreInput disabled={locked}
-                    value={scores[mt.id]?.a ?? ""}
-                    onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))} />
-                  <div className="flex-1 flex items-center gap-2 min-w-0">
-                    <TeamFlag code={away?.code} fallback={away?.flag} size={24} />
-                    <span className="font-medium text-sm truncate">{away?.name}</span>
-                  </div>
+                  
+                  {scores[mt.id]?.h !== "" && scores[mt.id]?.a !== "" && scores[mt.id]?.h === scores[mt.id]?.a && (
+                    <div className="bg-primary/5 p-2 rounded border border-primary/20 flex flex-col items-center gap-2 mt-1">
+                      <span className="text-xs font-medium text-muted-foreground">Quem avança?</span>
+                      <div className="flex items-center justify-center gap-4">
+                        <button 
+                           onClick={() => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], adv: home?.id } }))}
+                           className={`px-3 py-1 text-xs rounded-full border transition-colors flex items-center gap-2 ${scores[mt.id]?.adv === home?.id ? 'bg-primary text-primary-foreground border-primary font-bold' : 'bg-background hover:bg-muted'}`}>
+                          <TeamFlag code={home?.code} fallback={home?.flag} size={14} /> {home?.name}
+                        </button>
+                        <button 
+                           onClick={() => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], adv: away?.id } }))}
+                           className={`px-3 py-1 text-xs rounded-full border transition-colors flex items-center gap-2 ${scores[mt.id]?.adv === away?.id ? 'bg-primary text-primary-foreground border-primary font-bold' : 'bg-background hover:bg-muted'}`}>
+                          <TeamFlag code={away?.code} fallback={away?.flag} size={14} /> {away?.name}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -374,6 +410,7 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
 
 function SpecialPanel({ teams, initial, onSaved }: any) {
   const [champion, setChampion] = useState<string>(initial?.champion_team_id ?? "");
+  const [underdog, setUnderdog] = useState<string>(initial?.underdog_team_id ?? "");
   const [topScorer, setTopScorer] = useState<string>(initial?.top_scorer ?? "");
   const [bestGk, setBestGk] = useState<string>(initial?.best_goalkeeper ?? "");
   const [bestPlayer, setBestPlayer] = useState<string>(initial?.best_player ?? "");
@@ -382,6 +419,7 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
   useEffect(() => {
     if (initial) {
       setChampion(initial.champion_team_id ?? "");
+      setUnderdog(initial.underdog_team_id ?? "");
       setTopScorer(initial.top_scorer ?? "");
       setBestGk(initial.best_goalkeeper ?? "");
       setBestPlayer(initial.best_player ?? "");
@@ -394,6 +432,7 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
     const { error } = await supabase.from("special_predictions").upsert({
       user_id: user!.id,
       champion_team_id: champion || null,
+      underdog_team_id: underdog || null,
       top_scorer: topScorer.trim() || null,
       best_goalkeeper: bestGk.trim() || null,
       best_player: bestPlayer.trim() || null,
@@ -412,6 +451,17 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
           <label className="text-sm font-medium mb-1 block">Campeão da Copa</label>
           <Select value={champion} onValueChange={setChampion}>
             <SelectTrigger><SelectValue placeholder="Escolha uma seleção" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              {teams.map((t: any) => (
+                <SelectItem key={t.id} value={t.id}><TeamFlag code={t.code} fallback={t.flag} size={16} className="mr-1" /> {t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">Seleção Zebra</label>
+          <Select value={underdog} onValueChange={setUnderdog}>
+            <SelectTrigger><SelectValue placeholder="Escolha sua aposta de zebra" /></SelectTrigger>
             <SelectContent className="max-h-72">
               {teams.map((t: any) => (
                 <SelectItem key={t.id} value={t.id}><TeamFlag code={t.code} fallback={t.flag} size={16} className="mr-1" /> {t.name}</SelectItem>

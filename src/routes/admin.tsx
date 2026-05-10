@@ -168,20 +168,30 @@ function ResultsTab() {
     },
   });
   const teamsById = new Map((data?.teams ?? []).map((t) => [t.id, t]));
-  const [scores, setScores] = useState<Record<string, { h: string; a: string; finished: boolean }>>({});
+  const [scores, setScores] = useState<Record<string, { h: string; a: string; adv: string; finished: boolean }>>({});
 
   useEffect(() => {
     if (data) {
       const m: typeof scores = {};
-      data.matches.forEach((mt) => { m[mt.id] = { h: mt.home_score?.toString() ?? "", a: mt.away_score?.toString() ?? "", finished: mt.is_finished }; });
+      data.matches.forEach((mt) => { m[mt.id] = { h: mt.home_score?.toString() ?? "", a: mt.away_score?.toString() ?? "", adv: mt.advancing_team_id ?? "", finished: mt.is_finished }; });
       setScores(m);
     }
   }, [data]);
 
   async function saveMatch(id: string) {
     const s = scores[id];
+    const mt = data?.matches.find((x) => x.id === id);
     const h = parseInt(s.h); const a = parseInt(s.a);
-    const update: any = { is_finished: s.finished };
+    const isKO = mt?.phase && mt.phase !== "group";
+
+    if (isKO && h === a && s.finished && !s.adv) {
+      return toast.error("Se o jogo do mata-mata terminou empatado, selecione quem avança!");
+    }
+
+    const update: any = { 
+      is_finished: s.finished,
+      advancing_team_id: (isKO && h === a) ? (s.adv || null) : null
+    };
     if (!Number.isNaN(h) && !Number.isNaN(a)) { update.home_score = h; update.away_score = a; }
     else { update.home_score = null; update.away_score = null; }
     const { error } = await supabase.from("matches").update(update).eq("id", id);
@@ -198,26 +208,40 @@ function ResultsTab() {
         {(data?.matches ?? []).map((mt) => {
           const home = teamsById.get(mt.home_team_id ?? "");
           const away = teamsById.get(mt.away_team_id ?? "");
-          const s = scores[mt.id] ?? { h: "", a: "", finished: false };
+          const s = scores[mt.id] ?? { h: "", a: "", adv: "", finished: false };
           return (
-            <div key={mt.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/40">
-              <span className="text-xs text-muted-foreground w-24 shrink-0">{mt.round_label}</span>
-              <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-                <span className="text-sm truncate">{home?.name ?? "—"}</span>
-                <TeamFlag code={home?.code} fallback={home?.flag} size={20} />
+            <div key={mt.id} className="flex flex-col gap-2 p-3 rounded-md bg-muted/40">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-24 shrink-0">{mt.round_label}</span>
+                <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                  <span className="text-sm truncate">{home?.name ?? "—"}</span>
+                  <TeamFlag code={home?.code} fallback={home?.flag} size={20} />
+                </div>
+                <Input type="number" value={s.h} onChange={(e) => setScores((x) => ({ ...x, [mt.id]: { ...s, h: e.target.value } }))} className="w-12 text-center" />
+                <span>x</span>
+                <Input type="number" value={s.a} onChange={(e) => setScores((x) => ({ ...x, [mt.id]: { ...s, a: e.target.value } }))} className="w-12 text-center" />
+                <div className="flex-1 flex items-center gap-2 min-w-0">
+                  <TeamFlag code={away?.code} fallback={away?.flag} size={20} />
+                  <span className="text-sm truncate">{away?.name ?? "—"}</span>
+                </div>
+                <label className="flex items-center gap-1 text-xs">
+                  <Switch checked={s.finished} onCheckedChange={(v) => setScores((x) => ({ ...x, [mt.id]: { ...s, finished: v } }))} />
+                  final
+                </label>
+                <Button size="sm" variant="secondary" onClick={() => saveMatch(mt.id)}>OK</Button>
               </div>
-              <Input type="number" value={s.h} onChange={(e) => setScores((x) => ({ ...x, [mt.id]: { ...s, h: e.target.value } }))} className="w-12 text-center" />
-              <span>x</span>
-              <Input type="number" value={s.a} onChange={(e) => setScores((x) => ({ ...x, [mt.id]: { ...s, a: e.target.value } }))} className="w-12 text-center" />
-              <div className="flex-1 flex items-center gap-2 min-w-0">
-                <TeamFlag code={away?.code} fallback={away?.flag} size={20} />
-                <span className="text-sm truncate">{away?.name ?? "—"}</span>
-              </div>
-              <label className="flex items-center gap-1 text-xs">
-                <Switch checked={s.finished} onCheckedChange={(v) => setScores((x) => ({ ...x, [mt.id]: { ...s, finished: v } }))} />
-                final
-              </label>
-              <Button size="sm" variant="secondary" onClick={() => saveMatch(mt.id)}>OK</Button>
+
+              {mt.phase !== "group" && s.h !== "" && s.a !== "" && s.h === s.a && (
+                <div className="flex justify-center items-center gap-3 bg-background p-2 rounded border">
+                  <span className="text-xs text-muted-foreground font-medium">Quem avança de fase?</span>
+                  <button onClick={() => setScores((x) => ({ ...x, [mt.id]: { ...s, adv: home?.id ?? "" } }))} className={`px-3 py-1 text-xs border rounded-full transition-colors flex items-center gap-2 ${s.adv === home?.id ? 'bg-primary text-primary-foreground font-bold' : 'hover:bg-muted'}`}> 
+                    <TeamFlag code={home?.code} fallback={home?.flag} size={14} /> {home?.name ?? "Casa"} 
+                  </button>
+                  <button onClick={() => setScores((x) => ({ ...x, [mt.id]: { ...s, adv: away?.id ?? "" } }))} className={`px-3 py-1 text-xs border rounded-full transition-colors flex items-center gap-2 ${s.adv === away?.id ? 'bg-primary text-primary-foreground font-bold' : 'hover:bg-muted'}`}> 
+                    <TeamFlag code={away?.code} fallback={away?.flag} size={14} /> {away?.name ?? "Fora"} 
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}

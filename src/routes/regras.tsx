@@ -37,9 +37,10 @@ function Regras() {
       </Card>
 
       <Card className="p-6 border-border bg-accent/5">
-        <h3 className="font-bold mb-2">Como funciona o bônus Zebra</h3>
+        <h3 className="font-bold mb-2">Como funciona o Palpite Zebra</h3>
         <p className="text-sm text-muted-foreground">
-          Se você palpitar que uma seleção fora do Top 15 do ranking FIFA chegará pelo menos às quartas de final, e isso de fato acontecer, você ganha +50 pontos por seleção zebra.
+          Na aba de Palpites Especiais, você pode escolher <strong>uma única Seleção Zebra</strong> (seleções fora do Top 15 do ranking). 
+          Se a sua zebra escolhida chegar pelo menos até as Quartas de Final na vida real, você ganha a pontuação de bônus definida no quadro acima.
         </p>
       </Card>
     </div>

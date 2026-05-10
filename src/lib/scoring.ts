@@ -47,10 +47,33 @@ export function scoreMatchPrediction(
   realHome: number,
   realAway: number,
   rules: RuleMap,
+  predAdvancing?: string | null,
+  realAdvancing?: string | null
 ): number {
-  if (predHome === realHome && predAway === realAway) return rules.exact_score;
-  if (matchOutcome(predHome, predAway) === matchOutcome(realHome, realAway))
-    return rules.correct_result;
+  const isExactScore = predHome === realHome && predAway === realAway;
+  const isCorrectResult = matchOutcome(predHome, predAway) === matchOutcome(realHome, realAway);
+  const isDraw = matchOutcome(realHome, realAway) === "D";
+
+  // If it's a draw, the user must have predicted the correct advancing team to get any points
+  // for the match result itself.
+  const isAdvancingCorrect = isDraw && !!predAdvancing && predAdvancing === realAdvancing;
+
+  if (isExactScore) {
+    if (!isDraw) return rules.exact_score;
+    if (isAdvancingCorrect) return rules.exact_score;
+    // If they got exact score 1x1 but missed who advanced, they get partial points (correct result) or 0?
+    // Let's give them correct_result points for getting the score right but missing the penalty winner,
+    // or maybe 0? The user said: "não ganha pontos de Acerto de Vencedor. Ele só pontua no empate se acertar também quem passou"
+    // So if they missed the advancing team, they get 0 points!
+    return 0; 
+  }
+
+  if (isCorrectResult) {
+    if (!isDraw) return rules.correct_result;
+    if (isAdvancingCorrect) return rules.correct_result;
+    return 0; // predicted draw but wrong advancing team
+  }
+
   return 0;
 }
 

@@ -30,7 +30,7 @@ export async function recomputeAllPoints() {
   const predUpdates: Array<{ id: string; points_awarded: number }> = [];
   for (const p of predsRes.data ?? []) {
     const m = finishedById.get(p.match_id);
-    const pts = m ? scoreMatchPrediction(p.home_score, p.away_score, m.home_score!, m.away_score!, rules) : 0;
+    const pts = m ? scoreMatchPrediction(p.home_score, p.away_score, m.home_score!, m.away_score!, rules, p.advancing_team_id, m.advancing_team_id) : 0;
     predUpdates.push({ id: p.id, points_awarded: pts });
   }
 
@@ -107,14 +107,15 @@ export async function recomputeAllPoints() {
       }
     }
 
-    // Underdog bonus: user's KO predictions with reached_phase >= qf for non-top15 teams
-    const userKo = (koRes.data ?? []).filter((k) => k.user_id === userId);
-    for (const k of userKo) {
-      const t = teamsById.get(k.team_id);
-      if (!t || t.is_top15) continue;
-      const o = officialByTeam.get(k.team_id);
-      if (o && reachedAtLeast(o.reached_phase as MatchPhase, "qf") && reachedAtLeast(k.reached_phase, "qf")) {
-        bonus += rules.underdog_bonus;
+    // Underdog bonus: the single team selected in special_predictions
+    const sp = (specialRes.data ?? []).find((x) => x.user_id === userId);
+    if (sp && sp.underdog_team_id) {
+      const t = teamsById.get(sp.underdog_team_id);
+      if (t && !t.is_top15) {
+        const o = officialByTeam.get(sp.underdog_team_id);
+        if (o && reachedAtLeast(o.reached_phase as MatchPhase, "qf")) {
+          bonus += rules.underdog_bonus;
+        }
       }
     }
 
