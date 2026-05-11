@@ -1,7 +1,7 @@
 import pkg from 'pg';
 const { Client } = pkg;
 
-const connectionString = "postgresql://postgres.uhdcdyfpowspufttkofl:1wLiBVUtEeymNYbd@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true";
+const connectionString = process.env.DATABASE_URL || "postgresql://postgres.[YOUR_PROJECT_ID]:[YOUR_PASSWORD]@aws-0-sa-east-1.pooler.supabase.com:6543/postgres";
 
 async function listMatches() {
   const client = new Client({ connectionString });
