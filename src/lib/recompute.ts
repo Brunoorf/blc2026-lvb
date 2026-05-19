@@ -2,8 +2,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { computeGroupStandings } from "./group-table";
 import { knockoutPointsForPhase, reachedAtLeast, scoreMatchPrediction, type RuleMap, type MatchPhase } from "./scoring";
 
+// Batch updates in chunks to avoid overwhelming Supabase
+async function batchUpdatePredictions(updates: Array<{ id: string; points_awarded: number }>, chunkSize = 50) {
+  for (let i = 0; i < updates.length; i += chunkSize) {
+    const chunk = updates.slice(i, i + chunkSize);
+    await Promise.all(chunk.map((u) => supabase.from("predictions").update({ points_awarded: u.points_awarded }).eq("id", u.id)));
+  }
+}
+
+async function batchUpdateKO(updates: Array<{ id: string; points_awarded: number }>, chunkSize = 50) {
+  for (let i = 0; i < updates.length; i += chunkSize) {
+    const chunk = updates.slice(i, i + chunkSize);
+    await Promise.all(chunk.map((u) => supabase.from("knockout_predictions").update({ points_awarded: u.points_awarded }).eq("id", u.id)));
+  }
+}
+
+async function batchUpdateSpecial(updates: Array<{ id: string; points_awarded: number }>, chunkSize = 50) {
+  for (let i = 0; i < updates.length; i += chunkSize) {
+    const chunk = updates.slice(i, i + chunkSize);
+    await Promise.all(chunk.map((u) => supabase.from("special_predictions").update({ points_awarded: u.points_awarded }).eq("id", u.id)));
+  }
+}
+
 export async function recomputeAllPoints() {
-  const [rulesRes, matchesRes, predsRes, koRes, specialRes, teamsRes, officialRes] = await Promise.all([
+  const [rulesRes, matchesRes, predsRes, koRes, specialRes, teamsRes, officialRes, settingsRes] = await Promise.all([
     supabase.from("scoring_rules").select("*"),
     supabase.from("matches").select("*"),
     supabase.from("predictions").select("*"),
@@ -11,6 +33,7 @@ export async function recomputeAllPoints() {
     supabase.from("special_predictions").select("*"),
     supabase.from("teams").select("*"),
     supabase.from("team_official_results").select("*"),
+    supabase.from("tournament_settings").select("*").maybeSingle(),
   ]);
 
   const rulesMap: any = {};
@@ -20,6 +43,7 @@ export async function recomputeAllPoints() {
   const matches = matchesRes.data ?? [];
   const teams = teamsRes.data ?? [];
   const officials = officialRes.data ?? [];
+  const settings = settingsRes.data;
   const teamsById = new Map(teams.map((t) => [t.id, t]));
   const officialByTeam = new Map(officials.map((o) => [o.team_id, o]));
 
@@ -34,13 +58,9 @@ export async function recomputeAllPoints() {
     predUpdates.push({ id: p.id, points_awarded: pts });
   }
 
-  // 2) Group order bonus + team_advances bonus — applied as knockout_predictions rows? we keep simple: aggregate per user via knockout_predictions table.
-  // We'll compute and store knockout-style bonuses on knockout_predictions.points_awarded + extra synthetic via special.
-
-  // For each user: compute group order bonus and team_advances bonus by reading their group predictions (aggregating from match predictions).
+  // 2) Build official group order from team_official_results.group_position
   const userIds = Array.from(new Set([...(predsRes.data ?? []).map((p) => p.user_id), ...(koRes.data ?? []).map((p) => p.user_id), ...(specialRes.data ?? []).map((p) => p.user_id)]));
 
-  // Build official group order from team_official_results.group_position
   const officialOrderByGroup: Record<string, string[]> = {};
   for (const t of teams) {
     const o = officialByTeam.get(t.id);
@@ -61,18 +81,39 @@ export async function recomputeAllPoints() {
     koUpdates.push({ id: k.id, points_awarded: pts });
   }
 
-  // 4) Special predictions
-  const champion = teams.find((t) => officialByTeam.get(t.id)?.reached_phase === "final" && (officialByTeam.get(t.id) as any)?.group_position === 1);
-  // Champion is signaled by reaching "final" + we don't have winner flag; assume admin marks the champion via reached_phase='final' + group_position=1 hack. Simpler: champion = team with reached_phase='final' AND a single one designated. We'll trust: any team with reached_phase='final' counts as finalist; we need a champion field. For MVP, count champion as the team flagged with group_position=1 AND reached_phase='final'.
+  // 4) Special predictions — Champion + Individual Awards
+  // Champion: identified by is_champion flag on team_official_results
+  const champion = teams.find((t) => {
+    const o = officialByTeam.get(t.id) as any;
+    return o?.is_champion === true;
+  });
+  // Fallback to old logic if is_champion not set: reached_phase='final' + group_position=1
+  const championFallback = !champion
+    ? teams.find((t) => officialByTeam.get(t.id)?.reached_phase === "final" && (officialByTeam.get(t.id) as any)?.group_position === 1)
+    : null;
+  const championTeam = champion ?? championFallback;
+
+  // Official individual awards from tournament_settings
+  const officialTopScorer = (settings as any)?.official_top_scorer?.trim().toLowerCase() ?? "";
+  const officialBestGk = (settings as any)?.official_best_goalkeeper?.trim().toLowerCase() ?? "";
+  const officialBestPlayer = (settings as any)?.official_best_player?.trim().toLowerCase() ?? "";
+
   const specialUpdates: Array<{ id: string; points_awarded: number }> = [];
   for (const sp of specialRes.data ?? []) {
     let pts = 0;
-    if (champion && sp.champion_team_id === champion.id) pts += rules.champion;
-    // top scorer / goalkeeper / best player would need official names; admin can later store them — skipped for MVP
+    // Champion
+    if (championTeam && sp.champion_team_id === championTeam.id) pts += rules.champion;
+    // Top scorer
+    if (officialTopScorer && sp.top_scorer?.trim().toLowerCase() === officialTopScorer) pts += rules.top_scorer;
+    // Best goalkeeper
+    if (officialBestGk && sp.best_goalkeeper?.trim().toLowerCase() === officialBestGk) pts += rules.best_goalkeeper;
+    // Best player
+    if (officialBestPlayer && sp.best_player?.trim().toLowerCase() === officialBestPlayer) pts += rules.best_player;
+
     specialUpdates.push({ id: sp.id, points_awarded: pts });
   }
 
-  // 5) Group order bonuses + advance bonuses + underdog bonus aggregated as adjustments stored on knockout_predictions? We add them to special_predictions.points_awarded.
+  // 5) Group order bonuses + advance bonuses + underdog bonus
   for (const userId of userIds) {
     const userMatchPreds = (predsRes.data ?? []).filter((p) => p.user_id === userId);
     const matchPredById = new Map(userMatchPreds.map((p) => [p.match_id, p]));
@@ -134,12 +175,10 @@ export async function recomputeAllPoints() {
     }
   }
 
-  // Persist updates
-  await Promise.all([
-    ...predUpdates.map((u) => supabase.from("predictions").update({ points_awarded: u.points_awarded }).eq("id", u.id)),
-    ...koUpdates.map((u) => supabase.from("knockout_predictions").update({ points_awarded: u.points_awarded }).eq("id", u.id)),
-    ...specialUpdates.map((u) => supabase.from("special_predictions").update({ points_awarded: u.points_awarded }).eq("id", u.id)),
-  ]);
+  // Persist updates using batched chunks
+  await batchUpdatePredictions(predUpdates);
+  await batchUpdateKO(koUpdates);
+  await batchUpdateSpecial(specialUpdates);
 
   return {
     matchUpdated: predUpdates.length,

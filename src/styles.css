@@ -238,6 +238,13 @@
   .bracket-match:hover {
     border-color: var(--primary);
   }
+  .bracket-match-simulated {
+    border-style: dashed;
+    opacity: 0.85;
+  }
+  .bracket-match-simulated .bracket-team-slot.filled {
+    opacity: 0.8;
+  }
   .bracket-team-slot {
     display: flex;
     align-items: center;

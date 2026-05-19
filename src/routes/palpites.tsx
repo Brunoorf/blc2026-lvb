@@ -99,6 +99,14 @@ function PalpitesPage() {
 
   const groupLocked = data?.settings?.group_picks_locked ?? false;
 
+  // Count total predictions progress
+  const totalGroupMatches = (data?.matches ?? []).filter(m => m.phase === "group").length;
+  const filledPreds = (data?.preds ?? []).filter(p => {
+    const m = (data?.matches ?? []).find(mt => mt.id === p.match_id);
+    return m?.phase === "group";
+  }).length;
+  const progressPct = totalGroupMatches > 0 ? Math.round((filledPreds / totalGroupMatches) * 100) : 0;
+
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
   if (error) return <div className="text-center py-12 text-red-500 font-bold">Erro ao carregar dados: {error.message}</div>;
 
@@ -109,9 +117,18 @@ function PalpitesPage() {
           <h1 className="text-3xl font-bold">Meus palpites</h1>
           <p className="text-muted-foreground text-sm">Preencha placar de cada partida e suas previsões especiais.</p>
         </div>
-        {groupLocked && (
-          <Badge variant="destructive" className="gap-1"><Lock className="h-3 w-3" /> Palpites de grupo travados</Badge>
-        )}
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Progresso grupos</p>
+            <p className="text-sm font-bold">{filledPreds}/{totalGroupMatches} ({progressPct}%)</p>
+          </div>
+          <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%`, background: progressPct === 100 ? 'var(--primary)' : 'var(--accent)' }} />
+          </div>
+          {groupLocked && (
+            <Badge variant="destructive" className="gap-1"><Lock className="h-3 w-3" /> Travados</Badge>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="groups">
@@ -230,7 +247,10 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, onSaved }
             const away = teamsById.get(mt.away_team_id);
             return (
               <div key={mt.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground w-14 shrink-0 font-semibold">{mt.round_label}</span>
+                <div className="shrink-0 w-16">
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold block">{mt.round_label}</span>
+                  {mt.match_date && <span className="text-[9px] text-muted-foreground/70">{new Date(mt.match_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>}
+                </div>
                 <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                   <span className="font-medium text-sm truncate">{home?.name}</span>
                   <TeamFlag code={home?.code} fallback={home?.flag} size={24} />
@@ -459,15 +479,16 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
           </Select>
         </div>
         <div>
-          <label className="text-sm font-medium mb-1 block">Seleção Zebra</label>
+          <label className="text-sm font-medium mb-1 block">Seleção Zebra <span className="text-xs text-muted-foreground">(fora do Top 15)</span></label>
           <Select value={underdog} onValueChange={setUnderdog}>
             <SelectTrigger><SelectValue placeholder="Escolha sua aposta de zebra" /></SelectTrigger>
             <SelectContent className="max-h-72">
-              {teams.map((t: any) => (
+              {teams.filter((t: any) => !t.is_top15).map((t: any) => (
                 <SelectItem key={t.id} value={t.id}><TeamFlag code={t.code} fallback={t.flag} size={16} className="mr-1" /> {t.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground mt-1">Apenas seleções fora do Top 15 do ranking FIFA. Se chegar às quartas, você ganha bônus!</p>
         </div>
         <div>
           <label className="text-sm font-medium mb-1 block">Artilheiro</label>

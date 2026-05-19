@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Shield, Save, Calculator, AlertTriangle, Users, Plus, Trash2, GitBranch } from "lucide-react";
+import { Shield, Save, Calculator, AlertTriangle, Users, Plus, Trash2, GitBranch, Trophy } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import TeamFlag from "@/components/TeamFlag";
 import { Card } from "@/components/ui/card";
@@ -77,15 +77,30 @@ function TournamentTab() {
   const [phase, setPhase] = useState(data?.current_phase ?? "groups");
   const [groupLocked, setGroupLocked] = useState(data?.group_picks_locked ?? false);
   const [koLocked, setKoLocked] = useState(data?.knockout_picks_locked ?? false);
+  const [topScorer, setTopScorer] = useState((data as any)?.official_top_scorer ?? "");
+  const [bestGk, setBestGk] = useState((data as any)?.official_best_goalkeeper ?? "");
+  const [bestPlayer, setBestPlayer] = useState((data as any)?.official_best_player ?? "");
 
   useEffect(() => {
-    if (data) { setPhase(data.current_phase); setGroupLocked(data.group_picks_locked); setKoLocked(data.knockout_picks_locked); }
+    if (data) {
+      setPhase(data.current_phase);
+      setGroupLocked(data.group_picks_locked);
+      setKoLocked(data.knockout_picks_locked);
+      setTopScorer((data as any)?.official_top_scorer ?? "");
+      setBestGk((data as any)?.official_best_goalkeeper ?? "");
+      setBestPlayer((data as any)?.official_best_player ?? "");
+    }
   }, [data]);
 
   async function save() {
     const { error } = await supabase.from("tournament_settings").update({
-      current_phase: phase, group_picks_locked: groupLocked, knockout_picks_locked: koLocked,
-    }).eq("id", 1);
+      current_phase: phase,
+      group_picks_locked: groupLocked,
+      knockout_picks_locked: koLocked,
+      official_top_scorer: topScorer.trim() || null,
+      official_best_goalkeeper: bestGk.trim() || null,
+      official_best_player: bestPlayer.trim() || null,
+    } as any).eq("id", 1);
     if (error) return toast.error(error.message);
     toast.success("Configurações atualizadas!");
     qc.invalidateQueries({ queryKey: ["settings"] });
@@ -112,6 +127,26 @@ function TournamentTab() {
         <div><p className="font-medium">Travar palpites do mata-mata</p><p className="text-xs text-muted-foreground">Usuários não poderão mais editar.</p></div>
         <Switch checked={koLocked} onCheckedChange={setKoLocked} />
       </div>
+
+      <div className="border-t border-border pt-4">
+        <h4 className="font-bold text-sm mb-3">Premiações Oficiais (para pontuação)</h4>
+        <p className="text-xs text-muted-foreground mb-3">Preencha após a FIFA divulgar os vencedores. Usado no recálculo de pontos.</p>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium mb-1 block">Artilheiro oficial</label>
+            <Input value={topScorer} onChange={(e) => setTopScorer(e.target.value)} placeholder="Ex: Mbappé" />
+          </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block">Melhor goleiro oficial</label>
+            <Input value={bestGk} onChange={(e) => setBestGk(e.target.value)} placeholder="Ex: Courtois" />
+          </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block">Melhor jogador oficial</label>
+            <Input value={bestPlayer} onChange={(e) => setBestPlayer(e.target.value)} placeholder="Ex: Vini Jr" />
+          </div>
+        </div>
+      </div>
+
       <Button onClick={save} className="w-full"><Save className="h-4 w-4 mr-2" /> Salvar</Button>
     </Card>
   );
@@ -484,6 +519,26 @@ function TeamsTab() {
     qc.invalidateQueries({ queryKey: ["admin-team-results"] });
   }
 
+  async function toggleChampion(teamId: string) {
+    // First clear any existing champion
+    const currentResults = data?.results ?? [];
+    for (const r of currentResults) {
+      if ((r as any).is_champion && r.team_id !== teamId) {
+        await supabase.from("team_official_results").update({ is_champion: false } as any).eq("team_id", r.team_id);
+      }
+    }
+    // Toggle the selected team
+    const current = resultsByTeam.get(teamId);
+    const isCurrentlyChampion = (current as any)?.is_champion;
+    await supabase.from("team_official_results").upsert({
+      team_id: teamId,
+      reached_phase: current?.reached_phase ?? "final",
+      is_champion: !isCurrentlyChampion,
+    } as any);
+    toast.success(!isCurrentlyChampion ? "Campeão definido!" : "Campeão removido");
+    qc.invalidateQueries({ queryKey: ["admin-team-results"] });
+  }
+
   return (
     <Card className="p-5 max-w-4xl">
       <h3 className="font-bold mb-1">Trajetória oficial das seleções</h3>
@@ -491,12 +546,14 @@ function TeamsTab() {
       <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-2">
         {(data?.teams ?? []).map((t) => {
           const r = resultsByTeam.get(t.id);
+          const isChampion = (r as any)?.is_champion;
           return (
-            <div key={t.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/40">
+            <div key={t.id} className={`flex items-center gap-2 p-2 rounded-md ${isChampion ? 'bg-accent/20 border border-accent/40' : 'bg-muted/40'}`}>
               <span className="w-7 text-center text-xs font-bold text-muted-foreground">{t.group_id}</span>
               <TeamFlag code={t.code} fallback={t.flag} size={20} />
               <span className="flex-1 text-sm font-medium">{t.name}</span>
               {t.is_top15 && <span className="text-[10px] px-1.5 rounded bg-primary/20 text-primary font-bold">TOP15</span>}
+              {isChampion && <span className="text-[10px] px-1.5 rounded bg-accent/30 text-accent font-bold">🏆 Campeão</span>}
               <Select value={r?.reached_phase ?? "none"} onValueChange={(v) => setReached(t.id, v as any, r?.group_position ?? undefined)}>
                 <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -518,6 +575,9 @@ function TeamsTab() {
                   <SelectItem value="4">4º</SelectItem>
                 </SelectContent>
               </Select>
+              <Button size="sm" variant={isChampion ? "default" : "ghost"} onClick={() => toggleChampion(t.id)} title="Marcar como campeão">
+                <Trophy className={`h-4 w-4 ${isChampion ? 'text-accent-foreground' : 'text-muted-foreground'}`} />
+              </Button>
             </div>
           );
         })}

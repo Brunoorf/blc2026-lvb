@@ -10,6 +10,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -22,6 +23,10 @@ export default function LoginScreen() {
       toast.error("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
+    if (isSignUp && !displayName.trim()) {
+      toast.error("Preencha seu nome.");
+      return;
+    }
 
     setLoading(true);
 
@@ -29,7 +34,7 @@ export default function LoginScreen() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: email.split("@")[0] } },
+        options: { data: { full_name: displayName.trim() } },
       });
       if (error) {
         console.error("Erro no signup:", error);
@@ -69,6 +74,17 @@ export default function LoginScreen() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {isSignUp && (
+            <Input
+              type="text"
+              placeholder="Seu nome (ex: João Silva)"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="h-12 bg-background/50 backdrop-blur"
+              required
+              autoComplete="name"
+            />
+          )}
           <Input
             type="email"
             placeholder="seu@email.com"
