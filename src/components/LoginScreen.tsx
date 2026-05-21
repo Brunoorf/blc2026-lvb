@@ -1,4 +1,4 @@
-import { Trophy, Mail, LogIn, UserPlus } from "lucide-react";
+import { Trophy, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,17 +63,43 @@ export default function LoginScreen() {
       <div className="absolute inset-0" style={{ background: "var(--gradient-hero)" }} />
 
       <div className="relative z-10 w-full max-w-md text-center">
-        <div className="mx-auto h-20 w-20 rounded-2xl flex items-center justify-center mb-6" style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-glow)" }}>
+        {/* Logo + título */}
+        <div className="mx-auto h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-glow)" }}>
           <Trophy className="h-10 w-10 text-primary-foreground" />
         </div>
-        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-3">
+        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-8">
           Bolão da <span className="text-primary">Copa 2026</span>
         </h1>
-        <p className="text-muted-foreground mb-8">
-          48 seleções. 12 grupos. Um campeão. Faça seus palpites e dispute o ranking.
-        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Tabs: Entrar / Criar conta */}
+        <div className="flex rounded-xl overflow-hidden border border-border mb-6 bg-background/30 backdrop-blur">
+          <button
+            type="button"
+            onClick={() => setIsSignUp(false)}
+            className={`flex-1 py-3 px-4 text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+              !isSignUp
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            }`}
+          >
+            <LogIn className="h-4 w-4" />
+            Entrar
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsSignUp(true)}
+            className={`flex-1 py-3 px-4 text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+              isSignUp
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            }`}
+          >
+            <UserPlus className="h-4 w-4" />
+            Criar conta
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
           {isSignUp && (
             <Input
               type="text"
@@ -102,21 +128,13 @@ export default function LoginScreen() {
             required
             minLength={6}
           />
-          <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base font-semibold gap-3">
+          <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base font-semibold gap-3 mt-2">
             {isSignUp ? <UserPlus className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
-            {loading ? "Carregando..." : isSignUp ? "Criar conta" : "Entrar"}
+            {loading ? "Carregando..." : isSignUp ? "Criar conta e entrar" : "Entrar"}
           </Button>
         </form>
 
-        <button
-          type="button"
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {isSignUp ? "Já tem conta? Entrar" : "Não tem conta? Criar agora"}
-        </button>
-
-        <p className="mt-4 text-xs text-muted-foreground">
+        <p className="mt-5 text-xs text-muted-foreground">
           Bolão interno — peça o link de acesso ao organizador.
         </p>
       </div>

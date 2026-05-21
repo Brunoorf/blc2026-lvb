@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Lock, Save, Trophy, Users } from "lucide-react";
+import { Lock, Save, Trophy, Users, Check, AlertCircle, Circle } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import TeamFlag from "@/components/TeamFlag";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +20,9 @@ export const Route = createFileRoute("/palpites")({
   component: () => <AuthGate><PalpitesPage /></AuthGate>,
 });
 
+/* ------------------------------------------------------------------ */
+/*  ScoreInput – botões grandes e touch-friendly                      */
+/* ------------------------------------------------------------------ */
 function ScoreInput({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
   const num = value === "" ? null : parseInt(value);
   const set = (v: number) => onChange(String(Math.max(0, Math.min(20, v))));
@@ -28,37 +30,71 @@ function ScoreInput({ value, onChange, disabled }: { value: string; onChange: (v
     <div className="inline-flex items-center rounded-lg border border-border bg-background overflow-hidden shadow-sm">
       <button
         type="button"
-        disabled={disabled}
-        onClick={() => set((num ?? 0) - 1)}
-        className="h-9 w-7 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+        disabled={disabled || num === 0}
+        onClick={() => set((num ?? 1) - 1)}
+        className="h-10 w-9 sm:h-9 sm:w-7 flex items-center justify-center text-lg font-bold text-muted-foreground hover:bg-muted active:bg-muted/80 disabled:opacity-30 transition-colors select-none"
         aria-label="Diminuir"
-      >
-        <Minus className="h-3.5 w-3.5" />
-      </button>
+      >−</button>
       <input
         type="number"
         inputMode="numeric"
+        pattern="[0-9]*"
         min={0}
         max={20}
         disabled={disabled}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-10 text-center text-lg font-bold bg-transparent outline-none border-x border-border disabled:opacity-50"
-        placeholder="-"
+        className="h-10 w-10 sm:h-9 sm:w-10 text-center text-lg font-bold bg-transparent outline-none border-x border-border disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        placeholder="–"
       />
       <button
         type="button"
         disabled={disabled}
-        onClick={() => set((num ?? 0) + 1)}
-        className="h-9 w-7 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+        onClick={() => set((num ?? -1) + 1)}
+        className="h-10 w-9 sm:h-9 sm:w-7 flex items-center justify-center text-lg font-bold text-muted-foreground hover:bg-muted active:bg-muted/80 disabled:opacity-30 transition-colors select-none"
         aria-label="Aumentar"
-      >
-        <Plus className="h-3.5 w-3.5" />
-      </button>
+      >+</button>
     </div>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  GroupStatus helpers                                                */
+/* ------------------------------------------------------------------ */
+type GroupSaveStatus = "empty" | "partial" | "complete";
+
+function getGroupStatus(groupMatches: any[], preds: any[]): GroupSaveStatus {
+  const predIds = new Set(preds.filter(p => p.home_score != null && p.away_score != null).map(p => p.match_id));
+  let filled = 0;
+  for (const m of groupMatches) {
+    if (predIds.has(m.id)) filled++;
+  }
+  if (filled === 0) return "empty";
+  if (filled === groupMatches.length) return "complete";
+  return "partial";
+}
+
+function GroupStatusBadge({ status }: { status: GroupSaveStatus }) {
+  if (status === "complete") return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/30">
+      <Check className="h-3 w-3" /> Salvo
+    </span>
+  );
+  if (status === "partial") return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+      <AlertCircle className="h-3 w-3" /> Incompleto
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+      <Circle className="h-3 w-3" /> Pendente
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main page                                                          */
+/* ------------------------------------------------------------------ */
 function PalpitesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -103,24 +139,39 @@ function PalpitesPage() {
   const totalGroupMatches = (data?.matches ?? []).filter(m => m.phase === "group").length;
   const filledPreds = (data?.preds ?? []).filter(p => {
     const m = (data?.matches ?? []).find(mt => mt.id === p.match_id);
-    return m?.phase === "group";
+    return m?.phase === "group" && p.home_score != null && p.away_score != null;
   }).length;
   const progressPct = totalGroupMatches > 0 ? Math.round((filledPreds / totalGroupMatches) * 100) : 0;
+
+  // Group status summary
+  const groupStatuses = useMemo(() => {
+    const statuses: Record<string, GroupSaveStatus> = {};
+    for (const g of data?.groups ?? []) {
+      const gMatches = (data?.matches ?? []).filter(m => m.group_id === g.id && m.phase === "group");
+      const gPreds = (data?.preds ?? []).filter(p => gMatches.some(m => m.id === p.match_id));
+      statuses[g.id] = getGroupStatus(gMatches, gPreds);
+    }
+    return statuses;
+  }, [data]);
 
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
   if (error) return <div className="text-center py-12 text-red-500 font-bold">Erro ao carregar dados: {error.message}</div>;
 
+  const completeCount = Object.values(groupStatuses).filter(s => s === "complete").length;
+  const totalGroups = Object.keys(groupStatuses).length;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      {/* Header with progress */}
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold">Meus palpites</h1>
-          <p className="text-muted-foreground text-sm">Preencha placar de cada partida e suas previsões especiais.</p>
+          <p className="text-muted-foreground text-sm">Preencha o placar de cada partida e salve por grupo.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-xs text-muted-foreground">Progresso grupos</p>
-            <p className="text-sm font-bold">{filledPreds}/{totalGroupMatches} ({progressPct}%)</p>
+            <p className="text-xs text-muted-foreground">Progresso</p>
+            <p className="text-sm font-bold">{filledPreds}/{totalGroupMatches} jogos · {completeCount}/{totalGroups} grupos</p>
           </div>
           <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%`, background: progressPct === 100 ? 'var(--primary)' : 'var(--accent)' }} />
@@ -129,6 +180,29 @@ function PalpitesPage() {
             <Badge variant="destructive" className="gap-1"><Lock className="h-3 w-3" /> Travados</Badge>
           )}
         </div>
+      </div>
+
+      {/* Quick status bar: group badges */}
+      <div className="flex flex-wrap gap-1.5">
+        {(data?.groups ?? []).map((g) => {
+          const status = groupStatuses[g.id];
+          const bgClass = status === "complete"
+            ? "bg-green-500/20 border-green-500/40 text-green-400"
+            : status === "partial"
+            ? "bg-amber-500/20 border-amber-500/40 text-amber-400"
+            : "bg-muted/50 border-border text-muted-foreground";
+          return (
+            <a
+              key={g.id}
+              href={`#grupo-${g.id}`}
+              className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border transition-all hover:scale-105 ${bgClass}`}
+            >
+              {status === "complete" && <Check className="h-3 w-3" />}
+              {status === "partial" && <AlertCircle className="h-3 w-3" />}
+              {g.id}
+            </a>
+          );
+        })}
       </div>
 
       <Tabs defaultValue="groups">
@@ -148,6 +222,7 @@ function PalpitesPage() {
               preds={data?.preds ?? []}
               teamsById={teamsById}
               locked={groupLocked}
+              status={groupStatuses[g.id]}
               onSaved={() => {
                 qc.invalidateQueries({ queryKey: ["palpites"] });
                 qc.invalidateQueries({ queryKey: ["bracket"] });
@@ -178,17 +253,35 @@ function PalpitesPage() {
   );
 }
 
-function GroupBlock({ group, teams, matches, preds, teamsById, locked, onSaved }: any) {
-  // Build local form state for predictions
+/* ------------------------------------------------------------------ */
+/*  GroupBlock                                                         */
+/* ------------------------------------------------------------------ */
+function GroupBlock({ group, teams, matches, preds, teamsById, locked, status, onSaved }: any) {
   const [scores, setScores] = useState<Record<string, { h: string; a: string }>>(() => {
     const m: Record<string, { h: string; a: string }> = {};
     matches.forEach((mt: any) => {
       const p = preds.find((x: any) => x.match_id === mt.id);
-      m[mt.id] = { h: p ? String(p.home_score) : "", a: p ? String(p.away_score) : "" };
+      m[mt.id] = { h: p?.home_score != null ? String(p.home_score) : "", a: p?.away_score != null ? String(p.away_score) : "" };
     });
     return m;
   });
   const [saving, setSaving] = useState(false);
+
+  const groupMatches = matches.filter((m: any) => m.phase === "group");
+
+  // Check if local state differs from saved predictions
+  const hasUnsaved = useMemo(() => {
+    for (const mt of groupMatches) {
+      const s = scores[mt.id];
+      const p = preds.find((x: any) => x.match_id === mt.id);
+      const localH = s?.h ?? "";
+      const localA = s?.a ?? "";
+      const savedH = p?.home_score != null ? String(p.home_score) : "";
+      const savedA = p?.away_score != null ? String(p.away_score) : "";
+      if (localH !== savedH || localA !== savedA) return true;
+    }
+    return false;
+  }, [scores, preds, groupMatches]);
 
   // Live preview standings
   const previewMatches = matches
@@ -231,29 +324,37 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, onSaved }
     onSaved();
   }
 
+  const filledCount = Object.values(scores).filter(s => s.h !== "" && s.a !== "").length;
+  const totalMatches = groupMatches.length;
+
   return (
-    <Card className="p-5 border-border">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center font-bold">
+    <Card id={`grupo-${group.id}`} className="p-4 sm:p-5 border-border scroll-mt-20">
+      {/* Group header with status */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <span className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center font-bold shrink-0">
           {group.id}
         </span>
         <h3 className="font-bold text-lg">{group.name}</h3>
+        <GroupStatusBadge status={status} />
+        <span className="ml-auto text-xs text-muted-foreground">{filledCount}/{totalMatches} jogos</span>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
+        {/* Match cards — mobile-first layout */}
         <div className="space-y-2">
           {matches.sort((x: any, y: any) => x.match_number - y.match_number).map((mt: any) => {
             const home = teamsById.get(mt.home_team_id);
             const away = teamsById.get(mt.away_team_id);
+            const isFilled = scores[mt.id]?.h !== "" && scores[mt.id]?.a !== "";
             return (
-              <div key={mt.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                <div className="shrink-0 w-16">
+              <div key={mt.id} className={`flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg transition-colors ${isFilled ? "bg-primary/5 border border-primary/15" : "bg-muted/30 hover:bg-muted/50"}`}>
+                <div className="shrink-0 w-12 sm:w-16">
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold block">{mt.round_label}</span>
                   {mt.match_date && <span className="text-[9px] text-muted-foreground/70">{new Date(mt.match_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>}
                 </div>
-                <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-                  <span className="font-medium text-sm truncate">{home?.name}</span>
-                  <TeamFlag code={home?.code} fallback={home?.flag} size={24} />
+                <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2 min-w-0">
+                  <span className="font-medium text-xs sm:text-sm truncate">{home?.name}</span>
+                  <TeamFlag code={home?.code} fallback={home?.flag} size={20} />
                 </div>
                 <ScoreInput
                   disabled={locked}
@@ -266,15 +367,16 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, onSaved }
                   value={scores[mt.id]?.a ?? ""}
                   onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))}
                 />
-                <div className="flex-1 flex items-center gap-2 min-w-0">
-                  <TeamFlag code={away?.code} fallback={away?.flag} size={24} />
-                  <span className="font-medium text-sm truncate">{away?.name}</span>
+                <div className="flex-1 flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <TeamFlag code={away?.code} fallback={away?.flag} size={20} />
+                  <span className="font-medium text-xs sm:text-sm truncate">{away?.name}</span>
                 </div>
               </div>
             );
           })}
         </div>
 
+        {/* Standings preview */}
         <div>
           <p className="text-xs uppercase text-muted-foreground font-semibold mb-2 flex items-center gap-1">
             <Users className="h-3 w-3" /> Tabela prevista
@@ -298,15 +400,25 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, onSaved }
         </div>
       </div>
 
-      <div className="flex justify-end mt-4">
-        <Button onClick={handleSave} disabled={locked || saving}><Save className="h-4 w-4 mr-2" /> Salvar grupo</Button>
+      {/* Save button with unsaved indicator */}
+      <div className="flex items-center justify-end mt-4 gap-3">
+        {hasUnsaved && (
+          <span className="text-xs text-amber-400 flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" /> Alterações não salvas
+          </span>
+        )}
+        <Button onClick={handleSave} disabled={locked || saving} className={hasUnsaved ? "animate-pulse" : ""}>
+          <Save className="h-4 w-4 mr-2" /> Salvar grupo
+        </Button>
       </div>
     </Card>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  KnockoutPanel                                                      */
+/* ------------------------------------------------------------------ */
 function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }: any) {
-  // Match predictions for KO matches that already have teams set by admin
   const playable = matches.filter((m: any) => m.home_team_id && m.away_team_id);
 
   const [scores, setScores] = useState<Record<string, { h: string; a: string; adv: string }>>(() => {
@@ -331,7 +443,6 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
   async function handleSave() {
     const { data: { user } } = await supabase.auth.getUser();
     
-    // Check if any draw is missing advancing team
     for (const mt of playable) {
       const s = scores[mt.id];
       if (s?.h !== "" && s?.a !== "" && s?.h === s?.a && !s?.adv) {
@@ -378,10 +489,10 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
               const away = teamsById.get(mt.away_team_id);
               return (
                 <div key={mt.id} className="flex flex-col gap-2 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-                      <span className="font-medium text-sm truncate">{home?.name}</span>
-                      <TeamFlag code={home?.code} fallback={home?.flag} size={24} />
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2 min-w-0">
+                      <span className="font-medium text-xs sm:text-sm truncate">{home?.name}</span>
+                      <TeamFlag code={home?.code} fallback={home?.flag} size={20} />
                     </div>
                     <ScoreInput disabled={locked}
                       value={scores[mt.id]?.h ?? ""}
@@ -390,9 +501,9 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
                     <ScoreInput disabled={locked}
                       value={scores[mt.id]?.a ?? ""}
                       onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))} />
-                    <div className="flex-1 flex items-center gap-2 min-w-0">
-                      <TeamFlag code={away?.code} fallback={away?.flag} size={24} />
-                      <span className="font-medium text-sm truncate">{away?.name}</span>
+                    <div className="flex-1 flex items-center gap-1.5 sm:gap-2 min-w-0">
+                      <TeamFlag code={away?.code} fallback={away?.flag} size={20} />
+                      <span className="font-medium text-xs sm:text-sm truncate">{away?.name}</span>
                     </div>
                   </div>
                   
@@ -428,6 +539,9 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  SpecialPanel                                                       */
+/* ------------------------------------------------------------------ */
 function SpecialPanel({ teams, initial, onSaved }: any) {
   const [champion, setChampion] = useState<string>(initial?.champion_team_id ?? "");
   const [underdog, setUnderdog] = useState<string>(initial?.underdog_team_id ?? "");
