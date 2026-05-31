@@ -35,7 +35,6 @@ export interface RuleMap {
   advance_sf: number;
   advance_final: number;
   champion: number;
-  top_scorer: number;
   underdog_bonus: number;
 }
 

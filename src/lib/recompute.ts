@@ -93,16 +93,11 @@ export async function recomputeAllPoints() {
     : null;
   const championTeam = champion ?? championFallback;
 
-  // Official individual awards from tournament_settings
-  const officialTopScorer = (settings as any)?.official_top_scorer?.trim().toLowerCase() ?? "";
-
   const specialUpdates: Array<{ id: string; points_awarded: number }> = [];
   for (const sp of specialRes.data ?? []) {
     let pts = 0;
     // Champion
     if (championTeam && sp.champion_team_id === championTeam.id) pts += rules.champion;
-    // Top scorer
-    if (officialTopScorer && sp.top_scorer?.trim().toLowerCase() === officialTopScorer) pts += rules.top_scorer;
 
     specialUpdates.push({ id: sp.id, points_awarded: pts });
   }

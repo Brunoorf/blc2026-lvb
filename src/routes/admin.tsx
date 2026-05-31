@@ -77,14 +77,12 @@ function TournamentTab() {
   const [phase, setPhase] = useState(data?.current_phase ?? "groups");
   const [groupLocked, setGroupLocked] = useState(data?.group_picks_locked ?? false);
   const [koLocked, setKoLocked] = useState(data?.knockout_picks_locked ?? false);
-  const [topScorer, setTopScorer] = useState((data as any)?.official_top_scorer ?? "");
 
   useEffect(() => {
     if (data) {
       setPhase(data.current_phase);
       setGroupLocked(data.group_picks_locked);
       setKoLocked(data.knockout_picks_locked);
-      setTopScorer((data as any)?.official_top_scorer ?? "");
     }
   }, [data]);
 
@@ -93,7 +91,6 @@ function TournamentTab() {
       current_phase: phase,
       group_picks_locked: groupLocked,
       knockout_picks_locked: koLocked,
-      official_top_scorer: topScorer.trim() || null,
     } as any).eq("id", 1);
     if (error) return toast.error(error.message);
     toast.success("Configurações atualizadas!");
@@ -122,16 +119,6 @@ function TournamentTab() {
         <Switch checked={koLocked} onCheckedChange={setKoLocked} />
       </div>
 
-      <div className="border-t border-border pt-4">
-        <h4 className="font-bold text-sm mb-3">Premiações Oficiais (para pontuação)</h4>
-        <p className="text-xs text-muted-foreground mb-3">Preencha após a FIFA divulgar os vencedores. Usado no recálculo de pontos.</p>
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs font-medium mb-1 block">Artilheiro oficial</label>
-            <Input value={topScorer} onChange={(e) => setTopScorer(e.target.value)} placeholder="Ex: Mbappé" />
-          </div>
-        </div>
-      </div>
 
       <Button onClick={save} className="w-full"><Save className="h-4 w-4 mr-2" /> Salvar</Button>
     </Card>

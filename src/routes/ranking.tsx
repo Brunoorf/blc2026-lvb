@@ -49,8 +49,7 @@ function Ranking() {
           breakdown: { match: mp, knockout: kp, special: spp },
           special: {
             champion: champion?.name ?? "",
-            underdog: underdog?.name ?? "",
-            topScorer: sp?.top_scorer ?? ""
+            underdog: underdog?.name ?? ""
           }
         };
       }).sort((a, b) => b.points - a.points);
@@ -138,9 +137,6 @@ function RankingRow({ row, idx, isMe }: { row: any; idx: number; isMe: boolean }
               <p className="text-sm font-bold">{row.breakdown.special}</p>
             </div>
           </div>
-          {row.special.topScorer && (
-            <p className="text-xs text-muted-foreground mt-2">Artilheiro: {row.special.topScorer}</p>
-          )}
         </div>
       )}
     </div>

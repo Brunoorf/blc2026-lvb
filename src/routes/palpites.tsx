@@ -547,14 +547,12 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
 function SpecialPanel({ teams, initial, onSaved }: any) {
   const [champion, setChampion] = useState<string>(initial?.champion_team_id ?? "");
   const [underdog, setUnderdog] = useState<string>(initial?.underdog_team_id ?? "");
-  const [topScorer, setTopScorer] = useState<string>(initial?.top_scorer ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (initial) {
       setChampion(initial.champion_team_id ?? "");
       setUnderdog(initial.underdog_team_id ?? "");
-      setTopScorer(initial.top_scorer ?? "");
     }
   }, [initial]);
 
@@ -565,7 +563,6 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
       user_id: user!.id,
       champion_team_id: champion || null,
       underdog_team_id: underdog || null,
-      top_scorer: topScorer.trim() || null,
     }, { onConflict: "user_id" });
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -599,10 +596,6 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground mt-1">Apenas seleções fora do Top 15 do ranking FIFA. Se chegar às quartas, você ganha bônus!</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">Artilheiro</label>
-          <Input value={topScorer} onChange={(e) => setTopScorer(e.target.value)} placeholder="Nome do jogador" />
         </div>
         <Button onClick={handleSave} disabled={saving} className="w-full"><Save className="h-4 w-4 mr-2" /> Salvar especiais</Button>
       </div>

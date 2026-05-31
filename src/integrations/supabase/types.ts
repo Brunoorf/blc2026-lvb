@@ -250,7 +250,6 @@ export type Database = {
           created_at: string
           id: string
           points_awarded: number
-          top_scorer: string | null
           underdog_team_id: string | null
           updated_at: string
           user_id: string
@@ -260,7 +259,6 @@ export type Database = {
           created_at?: string
           id?: string
           points_awarded?: number
-          top_scorer?: string | null
           underdog_team_id?: string | null
           updated_at?: string
           user_id: string
@@ -270,7 +268,6 @@ export type Database = {
           created_at?: string
           id?: string
           points_awarded?: number
-          top_scorer?: string | null
           underdog_team_id?: string | null
           updated_at?: string
           user_id?: string
