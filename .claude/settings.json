@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push *)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(git commit -m 'refactor: remover aba de chaveamento para evitar confusão *)"
+    ]
+  }
+}

@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from "./routes/__root"
 import { Route as RegrasRouteImport } from "./routes/regras"
 import { Route as RankingRouteImport } from "./routes/ranking"
 import { Route as PalpitesRouteImport } from "./routes/palpites"
-import { Route as ChaveamentoRouteImport } from "./routes/chaveamento"
 import { Route as AdminRouteImport } from "./routes/admin"
 import { Route as IndexRouteImport } from "./routes/index"
 
@@ -31,11 +30,6 @@ const PalpitesRoute = PalpitesRouteImport.update({
   path: "/palpites",
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChaveamentoRoute = ChaveamentoRouteImport.update({
-  id: "/chaveamento",
-  path: "/chaveamento",
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminRoute = AdminRouteImport.update({
   id: "/admin",
   path: "/admin",
@@ -50,7 +44,6 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/admin": typeof AdminRoute
-  "/chaveamento": typeof ChaveamentoRoute
   "/palpites": typeof PalpitesRoute
   "/ranking": typeof RankingRoute
   "/regras": typeof RegrasRoute
@@ -58,7 +51,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/admin": typeof AdminRoute
-  "/chaveamento": typeof ChaveamentoRoute
   "/palpites": typeof PalpitesRoute
   "/ranking": typeof RankingRoute
   "/regras": typeof RegrasRoute
@@ -67,36 +59,21 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/admin": typeof AdminRoute
-  "/chaveamento": typeof ChaveamentoRoute
   "/palpites": typeof PalpitesRoute
   "/ranking": typeof RankingRoute
   "/regras": typeof RegrasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | "/"
-    | "/admin"
-    | "/chaveamento"
-    | "/palpites"
-    | "/ranking"
-    | "/regras"
+  fullPaths: "/" | "/admin" | "/palpites" | "/ranking" | "/regras"
   fileRoutesByTo: FileRoutesByTo
-  to: "/" | "/admin" | "/chaveamento" | "/palpites" | "/ranking" | "/regras"
-  id:
-    | "__root__"
-    | "/"
-    | "/admin"
-    | "/chaveamento"
-    | "/palpites"
-    | "/ranking"
-    | "/regras"
+  to: "/" | "/admin" | "/palpites" | "/ranking" | "/regras"
+  id: "__root__" | "/" | "/admin" | "/palpites" | "/ranking" | "/regras"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
-  ChaveamentoRoute: typeof ChaveamentoRoute
   PalpitesRoute: typeof PalpitesRoute
   RankingRoute: typeof RankingRoute
   RegrasRoute: typeof RegrasRoute
@@ -125,13 +102,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof PalpitesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/chaveamento": {
-      id: "/chaveamento"
-      path: "/chaveamento"
-      fullPath: "/chaveamento"
-      preLoaderRoute: typeof ChaveamentoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     "/admin": {
       id: "/admin"
       path: "/admin"
@@ -152,7 +122,6 @@ declare module "@tanstack/react-router" {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
-  ChaveamentoRoute: ChaveamentoRoute,
   PalpitesRoute: PalpitesRoute,
   RankingRoute: RankingRoute,
   RegrasRoute: RegrasRoute,

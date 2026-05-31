@@ -8,7 +8,6 @@ import type { ReactNode } from "react";
 const NAV = [
   { to: "/", label: "Início", icon: Trophy },
   { to: "/palpites", label: "Palpites", icon: ListChecks },
-  { to: "/chaveamento", label: "Chaveamento", icon: GitBranch },
   { to: "/ranking", label: "Ranking", icon: BarChart3 },
   { to: "/regras", label: "Regras", icon: Star },
 ] as const;

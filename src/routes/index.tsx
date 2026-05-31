@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, ListChecks, GitBranch, BarChart3, ArrowRight, Calendar } from "lucide-react";
+import { Trophy, ListChecks, BarChart3, ArrowRight, Calendar, Lock } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -67,13 +67,12 @@ function Home() {
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard icon={Trophy} label="Meus pontos" value={stats?.myPoints ?? 0} accent />
         <StatCard icon={ListChecks} label="Palpites enviados" value={`${stats?.myPredictions ?? 0}/${stats?.totalMatches ?? 0}`} />
-        <StatCard icon={GitBranch} label="Grupos travados" value={stats?.groupLocked ? "Sim" : "Não"} />
+        <StatCard icon={Lock} label="Grupos travados" value={stats?.groupLocked ? "Sim" : "Não"} />
         <StatCard icon={BarChart3} label="Mata-mata travado" value={stats?.koLocked ? "Sim" : "Não"} />
       </section>
 
-      <section className="grid md:grid-cols-3 gap-4">
+      <section className="grid md:grid-cols-2 gap-4">
         <ActionCard to="/palpites" icon={ListChecks} title="Palpites" desc="Placar das 72 partidas da fase de grupos e jogos do mata-mata." />
-        <ActionCard to="/chaveamento" icon={GitBranch} title="Simulador de chaveamento" desc="Veja como ficaria o mata-mata baseado nos seus palpites." />
         <ActionCard to="/ranking" icon={BarChart3} title="Ranking global" desc="Compare sua pontuação com os demais participantes." />
       </section>
     </div>
