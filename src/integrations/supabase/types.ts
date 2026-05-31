@@ -246,8 +246,6 @@ export type Database = {
       }
       special_predictions: {
         Row: {
-          best_goalkeeper: string | null
-          best_player: string | null
           champion_team_id: string | null
           created_at: string
           id: string
@@ -258,8 +256,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          best_goalkeeper?: string | null
-          best_player?: string | null
           champion_team_id?: string | null
           created_at?: string
           id?: string
@@ -270,8 +266,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          best_goalkeeper?: string | null
-          best_player?: string | null
           champion_team_id?: string | null
           created_at?: string
           id?: string

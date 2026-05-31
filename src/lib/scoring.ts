@@ -36,8 +36,6 @@ export interface RuleMap {
   advance_final: number;
   champion: number;
   top_scorer: number;
-  best_goalkeeper: number;
-  best_player: number;
   underdog_bonus: number;
 }
 

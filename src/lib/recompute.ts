@@ -95,8 +95,6 @@ export async function recomputeAllPoints() {
 
   // Official individual awards from tournament_settings
   const officialTopScorer = (settings as any)?.official_top_scorer?.trim().toLowerCase() ?? "";
-  const officialBestGk = (settings as any)?.official_best_goalkeeper?.trim().toLowerCase() ?? "";
-  const officialBestPlayer = (settings as any)?.official_best_player?.trim().toLowerCase() ?? "";
 
   const specialUpdates: Array<{ id: string; points_awarded: number }> = [];
   for (const sp of specialRes.data ?? []) {
@@ -105,10 +103,6 @@ export async function recomputeAllPoints() {
     if (championTeam && sp.champion_team_id === championTeam.id) pts += rules.champion;
     // Top scorer
     if (officialTopScorer && sp.top_scorer?.trim().toLowerCase() === officialTopScorer) pts += rules.top_scorer;
-    // Best goalkeeper
-    if (officialBestGk && sp.best_goalkeeper?.trim().toLowerCase() === officialBestGk) pts += rules.best_goalkeeper;
-    // Best player
-    if (officialBestPlayer && sp.best_player?.trim().toLowerCase() === officialBestPlayer) pts += rules.best_player;
 
     specialUpdates.push({ id: sp.id, points_awarded: pts });
   }

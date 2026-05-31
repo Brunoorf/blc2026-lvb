@@ -78,8 +78,6 @@ function TournamentTab() {
   const [groupLocked, setGroupLocked] = useState(data?.group_picks_locked ?? false);
   const [koLocked, setKoLocked] = useState(data?.knockout_picks_locked ?? false);
   const [topScorer, setTopScorer] = useState((data as any)?.official_top_scorer ?? "");
-  const [bestGk, setBestGk] = useState((data as any)?.official_best_goalkeeper ?? "");
-  const [bestPlayer, setBestPlayer] = useState((data as any)?.official_best_player ?? "");
 
   useEffect(() => {
     if (data) {
@@ -87,8 +85,6 @@ function TournamentTab() {
       setGroupLocked(data.group_picks_locked);
       setKoLocked(data.knockout_picks_locked);
       setTopScorer((data as any)?.official_top_scorer ?? "");
-      setBestGk((data as any)?.official_best_goalkeeper ?? "");
-      setBestPlayer((data as any)?.official_best_player ?? "");
     }
   }, [data]);
 
@@ -98,8 +94,6 @@ function TournamentTab() {
       group_picks_locked: groupLocked,
       knockout_picks_locked: koLocked,
       official_top_scorer: topScorer.trim() || null,
-      official_best_goalkeeper: bestGk.trim() || null,
-      official_best_player: bestPlayer.trim() || null,
     } as any).eq("id", 1);
     if (error) return toast.error(error.message);
     toast.success("Configurações atualizadas!");
@@ -135,14 +129,6 @@ function TournamentTab() {
           <div>
             <label className="text-xs font-medium mb-1 block">Artilheiro oficial</label>
             <Input value={topScorer} onChange={(e) => setTopScorer(e.target.value)} placeholder="Ex: Mbappé" />
-          </div>
-          <div>
-            <label className="text-xs font-medium mb-1 block">Melhor goleiro oficial</label>
-            <Input value={bestGk} onChange={(e) => setBestGk(e.target.value)} placeholder="Ex: Courtois" />
-          </div>
-          <div>
-            <label className="text-xs font-medium mb-1 block">Melhor jogador oficial</label>
-            <Input value={bestPlayer} onChange={(e) => setBestPlayer(e.target.value)} placeholder="Ex: Vini Jr" />
           </div>
         </div>
       </div>

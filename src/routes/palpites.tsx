@@ -32,7 +32,7 @@ function ScoreInput({ value, onChange, disabled }: { value: string; onChange: (v
         type="button"
         disabled={disabled || num === 0}
         onClick={() => set((num ?? 1) - 1)}
-        className="h-10 w-9 sm:h-9 sm:w-7 flex items-center justify-center text-lg font-bold text-muted-foreground hover:bg-muted active:bg-muted/80 disabled:opacity-30 transition-colors select-none"
+        className="h-11 w-10 sm:h-10 sm:w-9 md:h-9 md:w-8 flex items-center justify-center text-lg font-bold text-muted-foreground hover:bg-muted active:bg-muted/80 disabled:opacity-30 transition-colors select-none"
         aria-label="Diminuir"
       >−</button>
       <input
@@ -44,14 +44,14 @@ function ScoreInput({ value, onChange, disabled }: { value: string; onChange: (v
         disabled={disabled}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-10 w-10 sm:h-9 sm:w-10 text-center text-lg font-bold bg-transparent outline-none border-x border-border disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="h-11 w-11 sm:h-10 sm:w-10 md:h-9 md:w-10 text-center text-lg font-bold bg-transparent outline-none border-x border-border disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         placeholder="–"
       />
       <button
         type="button"
         disabled={disabled}
         onClick={() => set((num ?? -1) + 1)}
-        className="h-10 w-9 sm:h-9 sm:w-7 flex items-center justify-center text-lg font-bold text-muted-foreground hover:bg-muted active:bg-muted/80 disabled:opacity-30 transition-colors select-none"
+        className="h-11 w-10 sm:h-10 sm:w-9 md:h-9 md:w-8 flex items-center justify-center text-lg font-bold text-muted-foreground hover:bg-muted active:bg-muted/80 disabled:opacity-30 transition-colors select-none"
         aria-label="Aumentar"
       >+</button>
     </div>
@@ -330,7 +330,7 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, status, o
   return (
     <Card id={`grupo-${group.id}`} className="p-4 sm:p-5 border-border scroll-mt-20">
       {/* Group header with status */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
         <span className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center font-bold shrink-0">
           {group.id}
         </span>
@@ -339,7 +339,7 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, status, o
         <span className="ml-auto text-xs text-muted-foreground">{filledCount}/{totalMatches} jogos</span>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
         {/* Match cards — mobile-first layout */}
         <div className="space-y-2">
           {matches.sort((x: any, y: any) => x.match_number - y.match_number).map((mt: any) => {
@@ -347,28 +347,30 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, status, o
             const away = teamsById.get(mt.away_team_id);
             const isFilled = scores[mt.id]?.h !== "" && scores[mt.id]?.a !== "";
             return (
-              <div key={mt.id} className={`flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg transition-colors ${isFilled ? "bg-primary/5 border border-primary/15" : "bg-muted/30 hover:bg-muted/50"}`}>
-                <div className="shrink-0 w-12 sm:w-16">
+              <div key={mt.id} className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg transition-colors ${isFilled ? "bg-primary/5 border border-primary/15" : "bg-muted/30 hover:bg-muted/50"}`}>
+                <div className="shrink-0 w-14 sm:w-16">
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold block">{mt.round_label}</span>
                   {mt.match_date && <span className="text-[9px] text-muted-foreground/70">{new Date(mt.match_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>}
                 </div>
-                <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2 min-w-0">
+                <div className="flex-1 flex items-center justify-end gap-1.5 min-w-0">
                   <span className="font-medium text-xs sm:text-sm truncate">{home?.name}</span>
-                  <TeamFlag code={home?.code} fallback={home?.flag} size={20} />
+                  <TeamFlag code={home?.code} fallback={home?.flag} size={18} className="shrink-0" />
                 </div>
-                <ScoreInput
-                  disabled={locked}
-                  value={scores[mt.id]?.h ?? ""}
-                  onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], h: v } }))}
-                />
-                <span className="text-muted-foreground text-xs">×</span>
-                <ScoreInput
-                  disabled={locked}
-                  value={scores[mt.id]?.a ?? ""}
-                  onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))}
-                />
-                <div className="flex-1 flex items-center gap-1.5 sm:gap-2 min-w-0">
-                  <TeamFlag code={away?.code} fallback={away?.flag} size={20} />
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  <ScoreInput
+                    disabled={locked}
+                    value={scores[mt.id]?.h ?? ""}
+                    onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], h: v } }))}
+                  />
+                  <span className="text-xs sm:text-sm text-muted-foreground">×</span>
+                  <ScoreInput
+                    disabled={locked}
+                    value={scores[mt.id]?.a ?? ""}
+                    onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))}
+                  />
+                </div>
+                <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                  <TeamFlag code={away?.code} fallback={away?.flag} size={18} className="shrink-0" />
                   <span className="font-medium text-xs sm:text-sm truncate">{away?.name}</span>
                 </div>
               </div>
@@ -381,18 +383,18 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, status, o
           <p className="text-xs uppercase text-muted-foreground font-semibold mb-2 flex items-center gap-1">
             <Users className="h-3 w-3" /> Tabela prevista
           </p>
-          <div className="space-y-1">
+          <div className="space-y-2">
             {standings.map((s, idx) => {
               const t = teamsById.get(s.team_id);
               const advances = idx < 2;
               const third = idx === 2;
               return (
-                <div key={s.team_id} className={`flex items-center gap-2 p-2 rounded-md text-sm ${advances ? "bg-primary/10 border border-primary/30" : third ? "bg-accent/10 border border-accent/30" : "bg-muted/40"}`}>
-                  <span className="w-5 text-center text-xs font-bold text-muted-foreground">{idx + 1}º</span>
-                  <TeamFlag code={t?.code} fallback={t?.flag} size={20} />
+                <div key={s.team_id} className={`flex items-center gap-3 p-2.5 rounded-md text-sm ${advances ? "bg-primary/10 border border-primary/30" : third ? "bg-accent/10 border border-accent/30" : "bg-muted/40"}`}>
+                  <span className="w-6 sm:w-5 text-center text-xs font-bold text-muted-foreground">{idx + 1}º</span>
+                  <TeamFlag code={t?.code} fallback={t?.flag} size={18} />
                   <span className="flex-1 truncate font-medium">{t?.name}</span>
-                  <span className="text-xs text-muted-foreground w-10 text-right">{s.gf}:{s.ga}</span>
-                  <span className="font-bold w-6 text-right">{s.points}</span>
+                  <span className="text-xs text-muted-foreground w-14 sm:w-12 text-right">{s.gf}:{s.ga}</span>
+                  <span className="font-bold w-8 sm:w-7 text-right">{s.points}</span>
                 </div>
               );
             })}
@@ -546,8 +548,6 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
   const [champion, setChampion] = useState<string>(initial?.champion_team_id ?? "");
   const [underdog, setUnderdog] = useState<string>(initial?.underdog_team_id ?? "");
   const [topScorer, setTopScorer] = useState<string>(initial?.top_scorer ?? "");
-  const [bestGk, setBestGk] = useState<string>(initial?.best_goalkeeper ?? "");
-  const [bestPlayer, setBestPlayer] = useState<string>(initial?.best_player ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -555,8 +555,6 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
       setChampion(initial.champion_team_id ?? "");
       setUnderdog(initial.underdog_team_id ?? "");
       setTopScorer(initial.top_scorer ?? "");
-      setBestGk(initial.best_goalkeeper ?? "");
-      setBestPlayer(initial.best_player ?? "");
     }
   }, [initial]);
 
@@ -568,8 +566,6 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
       champion_team_id: champion || null,
       underdog_team_id: underdog || null,
       top_scorer: topScorer.trim() || null,
-      best_goalkeeper: bestGk.trim() || null,
-      best_player: bestPlayer.trim() || null,
     }, { onConflict: "user_id" });
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -607,14 +603,6 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
         <div>
           <label className="text-sm font-medium mb-1 block">Artilheiro</label>
           <Input value={topScorer} onChange={(e) => setTopScorer(e.target.value)} placeholder="Nome do jogador" />
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">Melhor goleiro</label>
-          <Input value={bestGk} onChange={(e) => setBestGk(e.target.value)} placeholder="Nome do goleiro" />
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">Melhor jogador</label>
-          <Input value={bestPlayer} onChange={(e) => setBestPlayer(e.target.value)} placeholder="Nome do jogador" />
         </div>
         <Button onClick={handleSave} disabled={saving} className="w-full"><Save className="h-4 w-4 mr-2" /> Salvar especiais</Button>
       </div>
