@@ -358,13 +358,13 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, status, o
                 </div>
                 <div className="flex items-center gap-1 sm:gap-1.5">
                   <ScoreInput
-                    disabled={locked}
+                    disabled={locked || mt.is_locked}
                     value={scores[mt.id]?.h ?? ""}
                     onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], h: v } }))}
                   />
                   <span className="text-xs sm:text-sm text-muted-foreground">×</span>
                   <ScoreInput
-                    disabled={locked}
+                    disabled={locked || mt.is_locked}
                     value={scores[mt.id]?.a ?? ""}
                     onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))}
                   />
@@ -496,11 +496,11 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
                       <span className="font-medium text-xs sm:text-sm truncate">{home?.name}</span>
                       <TeamFlag code={home?.code} fallback={home?.flag} size={20} />
                     </div>
-                    <ScoreInput disabled={locked}
+                    <ScoreInput disabled={locked || mt.is_locked}
                       value={scores[mt.id]?.h ?? ""}
                       onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], h: v } }))} />
                     <span className="text-muted-foreground text-xs">×</span>
-                    <ScoreInput disabled={locked}
+                    <ScoreInput disabled={locked || mt.is_locked}
                       value={scores[mt.id]?.a ?? ""}
                       onChange={(v) => setScores((s) => ({ ...s, [mt.id]: { ...s[mt.id], a: v } }))} />
                     <div className="flex-1 flex items-center gap-1.5 sm:gap-2 min-w-0">
