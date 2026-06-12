@@ -29,17 +29,12 @@ function Ranking() {
       const koPts = new Map<string, number>();
       const specialPts = new Map<string, number>();
 
-      const gustavoPredsFromQuery = (preds.data ?? []).filter(r => r.user_id === '690240eb-9182-4608-b41c-1b9ae7419f81');
-      console.log("[Query Predictions for Gustavo]", { count: gustavoPredsFromQuery.length, total: gustavoPredsFromQuery.reduce((s, r) => s + (r.points_awarded ?? 0), 0) });
-
       (preds.data ?? []).forEach((r) => matchPts.set(r.user_id, (matchPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
       (ko.data ?? []).forEach((r) => koPts.set(r.user_id, (koPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
       (special.data ?? []).forEach((r) => specialPts.set(r.user_id, (specialPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
 
       const specialByUserId = new Map((special.data ?? []).map((s) => [s.user_id, s]));
       const teamsById = new Map((teams.data ?? []).map((t) => [t.id, t]));
-
-      console.log("[Ranking Debug]", { matchPts: Object.fromEntries(matchPts), koPts: Object.fromEntries(koPts), specialPts: Object.fromEntries(specialPts) });
 
       return (profiles.data ?? []).map((p) => {
         const sp = specialByUserId.get(p.id);
@@ -49,9 +44,6 @@ function Ranking() {
         const kp = koPts.get(p.id) ?? 0;
         const spp = specialPts.get(p.id) ?? 0;
         const total = mp + kp + spp;
-        if (p.display_name === "Gustavo Ribeiro") {
-          console.log("[Gustavo Debug]", { mp, kp, spp, total });
-        }
         return {
           ...p,
           points: total,
