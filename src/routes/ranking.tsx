@@ -36,6 +36,8 @@ function Ranking() {
       const specialByUserId = new Map((special.data ?? []).map((s) => [s.user_id, s]));
       const teamsById = new Map((teams.data ?? []).map((t) => [t.id, t]));
 
+      console.log("[Ranking Debug]", { matchPts: Object.fromEntries(matchPts), koPts: Object.fromEntries(koPts), specialPts: Object.fromEntries(specialPts) });
+
       return (profiles.data ?? []).map((p) => {
         const sp = specialByUserId.get(p.id);
         const champion = sp?.champion_team_id ? teamsById.get(sp.champion_team_id) : null;
@@ -43,9 +45,13 @@ function Ranking() {
         const mp = matchPts.get(p.id) ?? 0;
         const kp = koPts.get(p.id) ?? 0;
         const spp = specialPts.get(p.id) ?? 0;
+        const total = mp + kp + spp;
+        if (p.display_name === "Gustavo Ribeiro") {
+          console.log("[Gustavo Debug]", { mp, kp, spp, total });
+        }
         return {
           ...p,
-          points: mp + kp + spp,
+          points: total,
           breakdown: { match: mp, knockout: kp, special: spp },
           special: {
             champion: champion?.name ?? "",
