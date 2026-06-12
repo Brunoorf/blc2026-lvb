@@ -29,6 +29,9 @@ function Ranking() {
       const koPts = new Map<string, number>();
       const specialPts = new Map<string, number>();
 
+      const gustavoPredsFromQuery = (preds.data ?? []).filter(r => r.user_id === '690240eb-9182-4608-b41c-1b9ae7419f81');
+      console.log("[Query Predictions for Gustavo]", { count: gustavoPredsFromQuery.length, total: gustavoPredsFromQuery.reduce((s, r) => s + (r.points_awarded ?? 0), 0) });
+
       (preds.data ?? []).forEach((r) => matchPts.set(r.user_id, (matchPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
       (ko.data ?? []).forEach((r) => koPts.set(r.user_id, (koPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
       (special.data ?? []).forEach((r) => specialPts.set(r.user_id, (specialPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
