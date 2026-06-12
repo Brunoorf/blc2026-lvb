@@ -621,6 +621,7 @@ function UsersTab() {
 
 /* ── Recompute Points ── */
 function RecomputeTab() {
+  const qc = useQueryClient();
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<string>("");
 
@@ -631,6 +632,7 @@ function RecomputeTab() {
       const r = await recomputeAllPoints();
       setLog(`✓ Atualizadas ${r.matchUpdated} previsões de jogos, ${r.koUpdated} de mata-mata e ${r.specialUpdated} especiais.`);
       toast.success("Pontuação recalculada!");
+      qc.invalidateQueries({ queryKey: ["ranking"] });
     } catch (e: any) {
       setLog(`Erro: ${e.message}`);
       toast.error(e.message);
