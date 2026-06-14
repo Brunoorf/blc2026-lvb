@@ -359,18 +359,21 @@ export type Database = {
           group_picks_locked: boolean
           id: number
           knockout_picks_locked: boolean
+          special_picks_locked: boolean
         }
         Insert: {
           current_phase?: Database["public"]["Enums"]["tournament_phase"]
           group_picks_locked?: boolean
           id?: number
           knockout_picks_locked?: boolean
+          special_picks_locked?: boolean
         }
         Update: {
           current_phase?: Database["public"]["Enums"]["tournament_phase"]
           group_picks_locked?: boolean
           id?: number
           knockout_picks_locked?: boolean
+          special_picks_locked?: boolean
         }
         Relationships: []
       }
