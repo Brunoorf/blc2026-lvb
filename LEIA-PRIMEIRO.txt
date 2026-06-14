@@ -1,0 +1,87 @@
+========================================
+   BOLÃO COPA DO MUNDO 2026
+   Guia Rápido de Instalação
+========================================
+
+ARQUIVOS QUE VOCÊ RECEBEU:
+==========================
+✓ setup.ps1 (ou setup.sh no Mac/Linux)
+✓ schema-clean.sql
+✓ Este arquivo (LEIA-PRIMEIRO.txt)
+
+
+PASSO 1: Criar novo Supabase (5 min)
+====================================
+1. Abrir: https://supabase.com
+2. Fazer login
+3. Clicar "New project"
+4. Escolher região: Brasil (sa-east-1)
+5. Ir em: Settings → API
+6. Copiar:
+   • Project URL
+   • Anon Key (chave pública)
+
+Guardar em algum lugar!
+
+
+PASSO 2: Executar script (3 min)
+================================
+
+WINDOWS (PowerShell):
+  .\setup.ps1
+
+MAC/LINUX (Terminal):
+  bash setup.sh
+
+O script vai pedir:
+  • URL do Supabase (cole aqui)
+  • Anon Key (cole aqui)
+
+Depois vai:
+  • Instalar dependências
+  • Criar arquivo de configuração
+  • Pronto!
+
+
+PASSO 3: Importar estrutura do banco (2 min)
+=============================================
+1. Voltar ao Supabase (aquela aba do navegador)
+2. Clicar: Database → SQL Editor
+3. Clicar: "New query"
+4. Abrir arquivo: schema-clean.sql
+5. Copiar TUDO
+6. Colar no SQL Editor do Supabase
+7. Clicar botão "Run" (verde)
+
+
+PASSO 4: Usar o bolão!
+======================
+No terminal (mesma pasta onde rodou o setup):
+
+  npm run dev
+
+Depois abrir no navegador:
+
+  http://localhost:5173
+
+Pronto! 🎉
+
+
+RESUMO:
+=======
+Total de tempo: ~10 minutos
+
+1. Criar Supabase (5 min)
+2. Rodar setup.ps1/sh (3 min)
+3. Importar schema-clean.sql (2 min)
+4. npm run dev (pronto!)
+
+
+DÚVIDAS?
+========
+Tudo que você precisa está nestes 3 arquivos:
+• setup.ps1 (ou setup.sh)
+• schema-clean.sql
+• Este arquivo
+
+Boa sorte! 🚀

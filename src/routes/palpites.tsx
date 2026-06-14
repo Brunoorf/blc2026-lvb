@@ -134,6 +134,7 @@ function PalpitesPage() {
   }, [data?.teams]);
 
   const groupLocked = data?.settings?.group_picks_locked ?? false;
+  const specialLocked = data?.settings?.special_picks_locked ?? false;
 
   // Count total predictions progress
   const totalGroupMatches = (data?.matches ?? []).filter(m => m.phase === "group").length;
@@ -246,7 +247,7 @@ function PalpitesPage() {
         </TabsContent>
 
         <TabsContent value="special" className="mt-6">
-          <SpecialPanel teams={data?.teams ?? []} initial={data?.special} onSaved={() => qc.invalidateQueries({ queryKey: ["palpites"] })} />
+          <SpecialPanel teams={data?.teams ?? []} initial={data?.special} locked={specialLocked} onSaved={() => qc.invalidateQueries({ queryKey: ["palpites"] })} />
         </TabsContent>
       </Tabs>
     </div>
@@ -544,7 +545,7 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
 /* ------------------------------------------------------------------ */
 /*  SpecialPanel                                                       */
 /* ------------------------------------------------------------------ */
-function SpecialPanel({ teams, initial, onSaved }: any) {
+function SpecialPanel({ teams, initial, locked, onSaved }: any) {
   const [champion, setChampion] = useState<string>(initial?.champion_team_id ?? "");
   const [underdog, setUnderdog] = useState<string>(initial?.underdog_team_id ?? "");
   const [saving, setSaving] = useState(false);
@@ -572,12 +573,12 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
 
   return (
     <Card className="p-6 border-border max-w-xl">
-      <h3 className="font-bold mb-4 flex items-center gap-2"><Trophy className="h-4 w-4 text-accent" /> Previsões especiais</h3>
+      <h3 className="font-bold mb-4 flex items-center gap-2"><Trophy className="h-4 w-4 text-accent" /> Previsões especiais {locked && <Badge variant="destructive" className="gap-1"><Lock className="h-3 w-3" /> Travadas</Badge>}</h3>
       <div className="space-y-4">
         <div>
           <label className="text-sm font-medium mb-1 block">Campeão da Copa</label>
-          <Select value={champion} onValueChange={setChampion}>
-            <SelectTrigger><SelectValue placeholder="Escolha uma seleção" /></SelectTrigger>
+          <Select value={champion} onValueChange={setChampion} disabled={locked}>
+            <SelectTrigger disabled={locked}><SelectValue placeholder="Escolha uma seleção" /></SelectTrigger>
             <SelectContent className="max-h-72">
               {teams.map((t: any) => (
                 <SelectItem key={t.id} value={t.id}><TeamFlag code={t.code} fallback={t.flag} size={16} className="mr-1" /> {t.name}</SelectItem>
@@ -587,8 +588,8 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
         </div>
         <div>
           <label className="text-sm font-medium mb-1 block">Seleção Zebra <span className="text-xs text-muted-foreground">(fora do Top 15)</span></label>
-          <Select value={underdog} onValueChange={setUnderdog}>
-            <SelectTrigger><SelectValue placeholder="Escolha sua aposta de zebra" /></SelectTrigger>
+          <Select value={underdog} onValueChange={setUnderdog} disabled={locked}>
+            <SelectTrigger disabled={locked}><SelectValue placeholder="Escolha sua aposta de zebra" /></SelectTrigger>
             <SelectContent className="max-h-72">
               {teams.filter((t: any) => !t.is_top15).map((t: any) => (
                 <SelectItem key={t.id} value={t.id}><TeamFlag code={t.code} fallback={t.flag} size={16} className="mr-1" /> {t.name}</SelectItem>
@@ -597,7 +598,7 @@ function SpecialPanel({ teams, initial, onSaved }: any) {
           </Select>
           <p className="text-xs text-muted-foreground mt-1">Apenas seleções fora do Top 15 do ranking FIFA. Se chegar às quartas, você ganha bônus!</p>
         </div>
-        <Button onClick={handleSave} disabled={saving} className="w-full"><Save className="h-4 w-4 mr-2" /> Salvar especiais</Button>
+        <Button onClick={handleSave} disabled={saving || locked} className="w-full"><Save className="h-4 w-4 mr-2" /> Salvar especiais</Button>
       </div>
     </Card>
   );

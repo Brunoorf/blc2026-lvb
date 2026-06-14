@@ -77,12 +77,14 @@ function TournamentTab() {
   const [phase, setPhase] = useState(data?.current_phase ?? "groups");
   const [groupLocked, setGroupLocked] = useState(data?.group_picks_locked ?? false);
   const [koLocked, setKoLocked] = useState(data?.knockout_picks_locked ?? false);
+  const [specialLocked, setSpecialLocked] = useState(data?.special_picks_locked ?? false);
 
   useEffect(() => {
     if (data) {
       setPhase(data.current_phase);
       setGroupLocked(data.group_picks_locked);
       setKoLocked(data.knockout_picks_locked);
+      setSpecialLocked(data.special_picks_locked);
     }
   }, [data]);
 
@@ -91,6 +93,7 @@ function TournamentTab() {
       current_phase: phase,
       group_picks_locked: groupLocked,
       knockout_picks_locked: koLocked,
+      special_picks_locked: specialLocked,
     } as any).eq("id", 1);
     if (error) return toast.error(error.message);
     toast.success("Configurações atualizadas!");
@@ -117,6 +120,10 @@ function TournamentTab() {
       <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40">
         <div><p className="font-medium">Travar palpites do mata-mata</p><p className="text-xs text-muted-foreground">Usuários não poderão mais editar.</p></div>
         <Switch checked={koLocked} onCheckedChange={setKoLocked} />
+      </div>
+      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40">
+        <div><p className="font-medium">Travar palpites especiais</p><p className="text-xs text-muted-foreground">Usuários não poderão editar campeão e zebra.</p></div>
+        <Switch checked={specialLocked} onCheckedChange={setSpecialLocked} />
       </div>
 
 
