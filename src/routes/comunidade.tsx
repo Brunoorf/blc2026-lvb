@@ -64,10 +64,19 @@ function Comunidade() {
     ? (data?.predictions ?? []).filter((p) => p.user_id === selectedUserId)
     : [];
 
-  const filteredPreds = userPreds.filter((p) => {
-    const match = matchesById.get(p.match_id);
-    return match?.phase === selectedPhase;
-  });
+  const filteredPreds = userPreds
+    .filter((p) => {
+      const match = matchesById.get(p.match_id);
+      return match?.phase === selectedPhase;
+    })
+    .sort((a, b) => {
+      const matchA = matchesById.get(a.match_id);
+      const matchB = matchesById.get(b.match_id);
+      // Finalizados primeiro (true > false)
+      const aFinished = matchA?.is_finished ? 1 : 0;
+      const bFinished = matchB?.is_finished ? 1 : 0;
+      return bFinished - aFinished;
+    });
 
   return (
     <div className="space-y-6">
