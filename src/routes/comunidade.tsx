@@ -48,7 +48,6 @@ function Comunidade() {
         <h2 className="text-xl font-bold mb-2">Visualização desabilitada</h2>
         <p className="text-muted-foreground mb-4">
           O admin desabilitou a visualização de palpites no momento.
-          Isso evita que os participantes copiem os palpites de quem está ganhando! 🔒
         </p>
         <p className="text-sm text-muted-foreground">
           A visualização estará disponível em breve.
