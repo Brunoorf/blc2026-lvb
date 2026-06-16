@@ -66,6 +66,7 @@ export type Database = {
       }
       matches: {
         Row: {
+          advancing_team_id: string | null
           away_score: number | null
           away_team_id: string | null
           group_id: string | null
@@ -79,6 +80,7 @@ export type Database = {
           round_label: string
         }
         Insert: {
+          advancing_team_id?: string | null
           away_score?: number | null
           away_team_id?: string | null
           group_id?: string | null
@@ -92,6 +94,7 @@ export type Database = {
           round_label: string
         }
         Update: {
+          advancing_team_id?: string | null
           away_score?: number | null
           away_team_id?: string | null
           group_id?: string | null
@@ -105,6 +108,13 @@ export type Database = {
           round_label?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "matches_advancing_team_id_fkey"
+            columns: ["advancing_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "matches_away_team_id_fkey"
             columns: ["away_team_id"]
@@ -130,6 +140,7 @@ export type Database = {
       }
       predictions: {
         Row: {
+          advancing_team_id: string | null
           away_score: number
           created_at: string
           home_score: number
@@ -140,6 +151,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          advancing_team_id?: string | null
           away_score: number
           created_at?: string
           home_score: number
@@ -150,6 +162,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          advancing_team_id?: string | null
           away_score?: number
           created_at?: string
           home_score?: number
@@ -160,6 +173,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "predictions_advancing_team_id_fkey"
+            columns: ["advancing_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "predictions_match_id_fkey"
             columns: ["match_id"]
@@ -226,6 +246,7 @@ export type Database = {
           id: string
           points_awarded: number
           top_scorer: string | null
+          underdog_team_id: string | null
           updated_at: string
           user_id: string
         }
@@ -237,6 +258,7 @@ export type Database = {
           id?: string
           points_awarded?: number
           top_scorer?: string | null
+          underdog_team_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -248,6 +270,7 @@ export type Database = {
           id?: string
           points_awarded?: number
           top_scorer?: string | null
+          underdog_team_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -255,6 +278,13 @@ export type Database = {
           {
             foreignKeyName: "special_predictions_champion_team_id_fkey"
             columns: ["champion_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "special_predictions_underdog_team_id_fkey"
+            columns: ["underdog_team_id"]
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
@@ -327,22 +357,28 @@ export type Database = {
       }
       tournament_settings: {
         Row: {
+          community_predictions_visible: boolean
           current_phase: Database["public"]["Enums"]["tournament_phase"]
           group_picks_locked: boolean
           id: number
           knockout_picks_locked: boolean
+          special_picks_locked: boolean
         }
         Insert: {
+          community_predictions_visible?: boolean
           current_phase?: Database["public"]["Enums"]["tournament_phase"]
           group_picks_locked?: boolean
           id?: number
           knockout_picks_locked?: boolean
+          special_picks_locked?: boolean
         }
         Update: {
+          community_predictions_visible?: boolean
           current_phase?: Database["public"]["Enums"]["tournament_phase"]
           group_picks_locked?: boolean
           id?: number
           knockout_picks_locked?: boolean
+          special_picks_locked?: boolean
         }
         Relationships: []
       }
