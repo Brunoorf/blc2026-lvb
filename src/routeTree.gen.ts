@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from "./routes/__root"
 import { Route as RegrasRouteImport } from "./routes/regras"
 import { Route as RankingRouteImport } from "./routes/ranking"
 import { Route as PalpitesRouteImport } from "./routes/palpites"
+import { Route as DebugRankingRouteImport } from "./routes/debug-ranking"
+import { Route as ComunidadeRouteImport } from "./routes/comunidade"
 import { Route as AdminRouteImport } from "./routes/admin"
 import { Route as IndexRouteImport } from "./routes/index"
 
@@ -30,6 +32,16 @@ const PalpitesRoute = PalpitesRouteImport.update({
   path: "/palpites",
   getParentRoute: () => rootRouteImport,
 } as any)
+const DebugRankingRoute = DebugRankingRouteImport.update({
+  id: "/debug-ranking",
+  path: "/debug-ranking",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComunidadeRoute = ComunidadeRouteImport.update({
+  id: "/comunidade",
+  path: "/comunidade",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: "/admin",
   path: "/admin",
@@ -44,6 +56,8 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/admin": typeof AdminRoute
+  "/comunidade": typeof ComunidadeRoute
+  "/debug-ranking": typeof DebugRankingRoute
   "/palpites": typeof PalpitesRoute
   "/ranking": typeof RankingRoute
   "/regras": typeof RegrasRoute
@@ -51,6 +65,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/admin": typeof AdminRoute
+  "/comunidade": typeof ComunidadeRoute
+  "/debug-ranking": typeof DebugRankingRoute
   "/palpites": typeof PalpitesRoute
   "/ranking": typeof RankingRoute
   "/regras": typeof RegrasRoute
@@ -59,21 +75,47 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/admin": typeof AdminRoute
+  "/comunidade": typeof ComunidadeRoute
+  "/debug-ranking": typeof DebugRankingRoute
   "/palpites": typeof PalpitesRoute
   "/ranking": typeof RankingRoute
   "/regras": typeof RegrasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/" | "/admin" | "/palpites" | "/ranking" | "/regras"
+  fullPaths:
+    | "/"
+    | "/admin"
+    | "/comunidade"
+    | "/debug-ranking"
+    | "/palpites"
+    | "/ranking"
+    | "/regras"
   fileRoutesByTo: FileRoutesByTo
-  to: "/" | "/admin" | "/palpites" | "/ranking" | "/regras"
-  id: "__root__" | "/" | "/admin" | "/palpites" | "/ranking" | "/regras"
+  to:
+    | "/"
+    | "/admin"
+    | "/comunidade"
+    | "/debug-ranking"
+    | "/palpites"
+    | "/ranking"
+    | "/regras"
+  id:
+    | "__root__"
+    | "/"
+    | "/admin"
+    | "/comunidade"
+    | "/debug-ranking"
+    | "/palpites"
+    | "/ranking"
+    | "/regras"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  ComunidadeRoute: typeof ComunidadeRoute
+  DebugRankingRoute: typeof DebugRankingRoute
   PalpitesRoute: typeof PalpitesRoute
   RankingRoute: typeof RankingRoute
   RegrasRoute: typeof RegrasRoute
@@ -102,6 +144,20 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof PalpitesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/debug-ranking": {
+      id: "/debug-ranking"
+      path: "/debug-ranking"
+      fullPath: "/debug-ranking"
+      preLoaderRoute: typeof DebugRankingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/comunidade": {
+      id: "/comunidade"
+      path: "/comunidade"
+      fullPath: "/comunidade"
+      preLoaderRoute: typeof ComunidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/admin": {
       id: "/admin"
       path: "/admin"
@@ -122,6 +178,8 @@ declare module "@tanstack/react-router" {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  ComunidadeRoute: ComunidadeRoute,
+  DebugRankingRoute: DebugRankingRoute,
   PalpitesRoute: PalpitesRoute,
   RankingRoute: RankingRoute,
   RegrasRoute: RegrasRoute,

@@ -187,13 +187,6 @@ export type Database = {
             referencedRelation: "matches"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "predictions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       profiles: {
@@ -246,28 +239,37 @@ export type Database = {
       }
       special_predictions: {
         Row: {
+          best_goalkeeper: string | null
+          best_player: string | null
           champion_team_id: string | null
           created_at: string
           id: string
           points_awarded: number
+          top_scorer: string | null
           underdog_team_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          best_goalkeeper?: string | null
+          best_player?: string | null
           champion_team_id?: string | null
           created_at?: string
           id?: string
           points_awarded?: number
+          top_scorer?: string | null
           underdog_team_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          best_goalkeeper?: string | null
+          best_player?: string | null
           champion_team_id?: string | null
           created_at?: string
           id?: string
           points_awarded?: number
+          top_scorer?: string | null
           underdog_team_id?: string | null
           updated_at?: string
           user_id?: string
@@ -355,28 +357,28 @@ export type Database = {
       }
       tournament_settings: {
         Row: {
+          community_predictions_visible: boolean
           current_phase: Database["public"]["Enums"]["tournament_phase"]
           group_picks_locked: boolean
           id: number
           knockout_picks_locked: boolean
           special_picks_locked: boolean
-          community_predictions_visible: boolean
         }
         Insert: {
+          community_predictions_visible?: boolean
           current_phase?: Database["public"]["Enums"]["tournament_phase"]
           group_picks_locked?: boolean
           id?: number
           knockout_picks_locked?: boolean
           special_picks_locked?: boolean
-          community_predictions_visible?: boolean
         }
         Update: {
+          community_predictions_visible?: boolean
           current_phase?: Database["public"]["Enums"]["tournament_phase"]
           group_picks_locked?: boolean
           id?: number
           knockout_picks_locked?: boolean
           special_picks_locked?: boolean
-          community_predictions_visible?: boolean
         }
         Relationships: []
       }
@@ -403,6 +405,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_ranking: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          id: string
+          total_pts: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
