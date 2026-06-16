@@ -360,6 +360,7 @@ export type Database = {
           id: number
           knockout_picks_locked: boolean
           special_picks_locked: boolean
+          community_predictions_visible: boolean
         }
         Insert: {
           current_phase?: Database["public"]["Enums"]["tournament_phase"]
@@ -367,6 +368,7 @@ export type Database = {
           id?: number
           knockout_picks_locked?: boolean
           special_picks_locked?: boolean
+          community_predictions_visible?: boolean
         }
         Update: {
           current_phase?: Database["public"]["Enums"]["tournament_phase"]
@@ -374,6 +376,7 @@ export type Database = {
           id?: number
           knockout_picks_locked?: boolean
           special_picks_locked?: boolean
+          community_predictions_visible?: boolean
         }
         Relationships: []
       }
