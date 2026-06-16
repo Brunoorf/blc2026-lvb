@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Trophy, ListChecks, GitBranch, BarChart3, Settings, LogOut, Star, Shield } from "lucide-react";
+import { Trophy, ListChecks, GitBranch, BarChart3, Settings, LogOut, Star, Shield, Users } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ const NAV = [
   { to: "/", label: "Início", icon: Trophy },
   { to: "/palpites", label: "Palpites", icon: ListChecks },
   { to: "/ranking", label: "Ranking", icon: BarChart3 },
+  { to: "/comunidade", label: "Comunidade", icon: Users },
   { to: "/regras", label: "Regras", icon: Star },
 ] as const;
 
