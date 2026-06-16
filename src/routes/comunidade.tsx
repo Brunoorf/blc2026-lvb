@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { RootRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Users, ChevronRight, Check, X } from "lucide-react";
+import { Users, ChevronRight, Check, X, AlertCircle } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,12 @@ function Comunidade() {
   const { data, isLoading } = useQuery({
     queryKey: ["comunidade"],
     queryFn: async () => {
-      const [profiles, predictions, matches, teams] = await Promise.all([
+      const [profiles, predictions, matches, teams, settings] = await Promise.all([
         supabase.from("profiles").select("id, display_name, avatar_url").order("display_name"),
         supabase.from("predictions").select("*"),
         supabase.from("matches").select("*"),
         supabase.from("teams").select("*"),
+        supabase.from("tournament_settings").select("*").maybeSingle(),
       ]);
 
       return {
@@ -33,11 +34,30 @@ function Comunidade() {
         predictions: predictions.data ?? [],
         matches: matches.data ?? [],
         teams: teams.data ?? [],
+        settings: settings.data,
       };
     },
   });
 
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
+
+  const isLocked = data?.settings?.group_picks_locked || data?.settings?.knockout_picks_locked;
+
+  if (!isLocked) {
+    return (
+      <Card className="p-12 text-center max-w-2xl mx-auto border-amber-500/50 bg-amber-500/5">
+        <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-3" />
+        <h2 className="text-xl font-bold mb-2">Visualização desabilitada</h2>
+        <p className="text-muted-foreground mb-4">
+          A visualização de palpites está desabilitada enquanto o período de alteração está ativo.
+          Isso evita que os participantes copiem os palpites de quem está ganhando! 🔒
+        </p>
+        <p className="text-sm text-muted-foreground">
+          A visualização estará disponível quando o período de palpites for fechado.
+        </p>
+      </Card>
+    );
+  }
 
   const teamsById = new Map((data?.teams ?? []).map((t) => [t.id, t]));
   const matchesById = new Map((data?.matches ?? []).map((m) => [m.id, m]));
