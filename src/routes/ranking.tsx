@@ -33,7 +33,7 @@ function Ranking() {
       const matchPts = new Map<string, number>();
       for (const p of predictions) {
         const m = matchesById.get(p.match_id);
-        if (!m || !m.is_finished) continue;
+        if (!m || !m.is_finished || m.home_score == null || m.away_score == null) continue;
 
         let pts = 0;
         if (p.home_score === m.home_score && p.away_score === m.away_score) {

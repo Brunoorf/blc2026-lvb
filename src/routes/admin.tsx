@@ -657,7 +657,7 @@ function RecomputeTab() {
       const updates: Array<{ id: string; pts: number }> = [];
       for (const p of predictions) {
         const m = matches.find((mt) => mt.id === p.match_id && mt.is_finished);
-        if (!m) continue;
+        if (!m || m.home_score == null || m.away_score == null) continue;
 
         let pts = 0;
         if (p.home_score === m.home_score && p.away_score === m.away_score) {
