@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trophy, Medal, Star, ChevronDown, ChevronUp } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import { Card } from "@/components/ui/card";
@@ -11,11 +10,22 @@ export const Route = createFileRoute("/ranking")({
   component: () => <AuthGate><Ranking /></AuthGate>,
 });
 
+interface RankingData {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+  points: number;
+  breakdown: { match: number; knockout: number; special: number };
+  special: { champion: string; underdog: string };
+}
+
 function Ranking() {
   const { user } = useAuth();
-  const { data, isLoading } = useQuery({
-    queryKey: ["ranking"],
-    queryFn: async () => {
+  const [data, setData] = useState<RankingData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadRanking = async () => {
+    try {
       const [profiles, preds, matches, ko, special, teams] = await Promise.all([
         supabase.from("profiles").select("id, display_name, avatar_url"),
         supabase.from("predictions").select("*"),
@@ -29,60 +39,64 @@ function Ranking() {
       const allMatches = matches.data ?? [];
       const matchesById = new Map(allMatches.map((m) => [m.id, m]));
 
-      // Calculate match points in real-time based on predictions vs actual results
+      // Calculate match points
       const matchPts = new Map<string, number>();
       for (const p of predictions) {
         const m = matchesById.get(p.match_id);
-        if (!m || !m.is_finished || m.home_score == null || m.away_score == null) continue;
+        if (!m?.is_finished || m.home_score == null || m.away_score == null) continue;
 
         let pts = 0;
-        if (p.home_score === m.home_score! && p.away_score === m.away_score!) {
-          pts = 25; // exact score
+        if (p.home_score === m.home_score && p.away_score === m.away_score) {
+          pts = 25;
         } else if (
-          (p.home_score > p.away_score && m.home_score! > m.away_score!) ||
-          (p.home_score < p.away_score && m.home_score! < m.away_score!) ||
-          (p.home_score === p.away_score && m.home_score! === m.away_score!)
+          (p.home_score > p.away_score && m.home_score > m.away_score) ||
+          (p.home_score < p.away_score && m.home_score < m.away_score) ||
+          (p.home_score === p.away_score && m.home_score === m.away_score)
         ) {
-          pts = 10; // correct result
+          pts = 10;
         }
-
         matchPts.set(p.user_id, (matchPts.get(p.user_id) ?? 0) + pts);
       }
 
-      // KO and special points from database
       const koPts = new Map<string, number>();
       const specialPts = new Map<string, number>();
-
       (ko.data ?? []).forEach((r) => koPts.set(r.user_id, (koPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
       (special.data ?? []).forEach((r) => specialPts.set(r.user_id, (specialPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
 
       const specialByUserId = new Map((special.data ?? []).map((s) => [s.user_id, s]));
       const teamsById = new Map((teams.data ?? []).map((t) => [t.id, t]));
 
-      return (profiles.data ?? []).map((p) => {
+      const ranking = (profiles.data ?? []).map((p) => {
         const sp = specialByUserId.get(p.id);
-        const champion = sp?.champion_team_id ? teamsById.get(sp.champion_team_id) : null;
-        const underdog = sp?.underdog_team_id ? teamsById.get(sp.underdog_team_id) : null;
         const mp = matchPts.get(p.id) ?? 0;
         const kp = koPts.get(p.id) ?? 0;
         const spp = specialPts.get(p.id) ?? 0;
-        const total = mp + kp + spp;
         return {
           ...p,
-          points: total,
+          points: mp + kp + spp,
           breakdown: { match: mp, knockout: kp, special: spp },
           special: {
-            champion: champion?.name ?? "",
-            underdog: underdog?.name ?? ""
+            champion: sp?.champion_team_id ? teamsById.get(sp.champion_team_id)?.name ?? "" : "",
+            underdog: sp?.underdog_team_id ? teamsById.get(sp.underdog_team_id)?.name ?? "" : "",
           }
         };
       }).sort((a, b) => b.points - a.points);
-    },
-    staleTime: 0, // Always fetch fresh data
-    refetchInterval: 10000, // Refetch every 10 seconds
-  });
 
-  if (isLoading) return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
+      setData(ranking);
+      setLoading(false);
+    } catch (e) {
+      console.error("Erro ao carregar ranking:", e);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRanking();
+    const interval = setInterval(loadRanking, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading) return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
 
   return (
     <div className="space-y-6">
@@ -92,11 +106,11 @@ function Ranking() {
       </div>
 
       <Card className="border-border overflow-hidden">
-        {(data ?? []).length === 0 ? (
+        {data.length === 0 ? (
           <div className="p-12 text-center text-muted-foreground">Ninguém pontuou ainda.</div>
         ) : (
           <div className="divide-y divide-border">
-            {data!.map((row, idx) => (
+            {data.map((row, idx) => (
               <RankingRow key={row.id} row={row} idx={idx} isMe={row.id === user?.id} />
             ))}
           </div>
@@ -106,16 +120,13 @@ function Ranking() {
   );
 }
 
-function RankingRow({ row, idx, isMe }: { row: any; idx: number; isMe: boolean }) {
+function RankingRow({ row, idx, isMe }: { row: RankingData; idx: number; isMe: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const medal = idx === 0 ? "text-yellow-400" : idx === 1 ? "text-gray-300" : idx === 2 ? "text-amber-600" : "";
 
   return (
     <div className={`${isMe ? "bg-primary/10" : ""}`}>
-      <div
-        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/30 transition-colors"
-        onClick={() => setExpanded(!expanded)}
-      >
+      <div className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setExpanded(!expanded)}>
         <div className="w-8 text-center font-bold">
           {idx < 3 ? <Medal className={`h-5 w-5 mx-auto ${medal}`} /> : <span className="text-muted-foreground">{idx + 1}</span>}
         </div>
@@ -130,8 +141,8 @@ function RankingRow({ row, idx, isMe }: { row: any; idx: number; isMe: boolean }
           <p className="font-semibold truncate">{row.display_name} {isMe && <span className="text-xs text-primary">(você)</span>}</p>
           {(row.special.champion || row.special.underdog) && (
             <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-              {row.special.champion && <span title="Aposta de Campeão" className="flex items-center gap-1"><Trophy className="h-3 w-3 text-accent" /> {row.special.champion}</span>}
-              {row.special.underdog && <span title="Aposta de Zebra" className="flex items-center gap-1"><Star className="h-3 w-3" /> {row.special.underdog}</span>}
+              {row.special.champion && <span className="flex items-center gap-1"><Trophy className="h-3 w-3 text-accent" /> {row.special.champion}</span>}
+              {row.special.underdog && <span className="flex items-center gap-1"><Star className="h-3 w-3" /> {row.special.underdog}</span>}
             </div>
           )}
         </div>
@@ -140,13 +151,10 @@ function RankingRow({ row, idx, isMe }: { row: any; idx: number; isMe: boolean }
             <p className="font-bold text-lg">{row.points}</p>
             <p className="text-xs text-muted-foreground">pts</p>
           </div>
-          {row.points > 0 && (
-            expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          )}
+          {row.points > 0 && (expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
         </div>
       </div>
 
-      {/* Breakdown expandido */}
       {expanded && row.points > 0 && (
         <div className="px-4 pb-4 pt-0 ml-11">
           <div className="grid grid-cols-3 gap-2 text-center">
