@@ -26,37 +26,17 @@ function Ranking() {
 
   const loadRanking = async () => {
     try {
-      const [profiles, preds, matches, ko, special, teams] = await Promise.all([
+      const [profiles, preds, ko, special, teams] = await Promise.all([
         supabase.from("profiles").select("id, display_name, avatar_url"),
-        supabase.from("predictions").select("*"),
-        supabase.from("matches").select("*"),
+        supabase.from("predictions").select("user_id, points_awarded"),
         supabase.from("knockout_predictions").select("user_id, points_awarded"),
         supabase.from("special_predictions").select("*"),
         supabase.from("teams").select("*"),
       ]);
 
-      const predictions = preds.data ?? [];
-      const allMatches = matches.data ?? [];
-      const matchesById = new Map(allMatches.map((m) => [m.id, m]));
-
-      // Calculate match points
+      // Use points_awarded from database (already calculated correctly)
       const matchPts = new Map<string, number>();
-      for (const p of predictions) {
-        const m = matchesById.get(p.match_id);
-        if (!m?.is_finished || m.home_score == null || m.away_score == null) continue;
-
-        let pts = 0;
-        if (p.home_score === m.home_score && p.away_score === m.away_score) {
-          pts = 25;
-        } else if (
-          (p.home_score > p.away_score && m.home_score > m.away_score) ||
-          (p.home_score < p.away_score && m.home_score < m.away_score) ||
-          (p.home_score === p.away_score && m.home_score === m.away_score)
-        ) {
-          pts = 10;
-        }
-        matchPts.set(p.user_id, (matchPts.get(p.user_id) ?? 0) + pts);
-      }
+      (preds.data ?? []).forEach((p) => matchPts.set(p.user_id, (matchPts.get(p.user_id) ?? 0) + (p.points_awarded ?? 0)));
 
       const koPts = new Map<string, number>();
       const specialPts = new Map<string, number>();
