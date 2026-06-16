@@ -66,7 +66,6 @@ export type Database = {
       }
       matches: {
         Row: {
-          advancing_team_id: string | null
           away_score: number | null
           away_team_id: string | null
           group_id: string | null
@@ -80,7 +79,6 @@ export type Database = {
           round_label: string
         }
         Insert: {
-          advancing_team_id?: string | null
           away_score?: number | null
           away_team_id?: string | null
           group_id?: string | null
@@ -94,7 +92,6 @@ export type Database = {
           round_label: string
         }
         Update: {
-          advancing_team_id?: string | null
           away_score?: number | null
           away_team_id?: string | null
           group_id?: string | null
@@ -108,13 +105,6 @@ export type Database = {
           round_label?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "matches_advancing_team_id_fkey"
-            columns: ["advancing_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "matches_away_team_id_fkey"
             columns: ["away_team_id"]
@@ -140,7 +130,6 @@ export type Database = {
       }
       predictions: {
         Row: {
-          advancing_team_id: string | null
           away_score: number
           created_at: string
           home_score: number
@@ -151,7 +140,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          advancing_team_id?: string | null
           away_score: number
           created_at?: string
           home_score: number
@@ -162,7 +150,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          advancing_team_id?: string | null
           away_score?: number
           created_at?: string
           home_score?: number
@@ -174,24 +161,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "predictions_advancing_team_id_fkey"
-            columns: ["advancing_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "predictions_match_id_fkey"
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "matches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "predictions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -246,29 +219,35 @@ export type Database = {
       }
       special_predictions: {
         Row: {
+          best_goalkeeper: string | null
+          best_player: string | null
           champion_team_id: string | null
           created_at: string
           id: string
           points_awarded: number
-          underdog_team_id: string | null
+          top_scorer: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          best_goalkeeper?: string | null
+          best_player?: string | null
           champion_team_id?: string | null
           created_at?: string
           id?: string
           points_awarded?: number
-          underdog_team_id?: string | null
+          top_scorer?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          best_goalkeeper?: string | null
+          best_player?: string | null
           champion_team_id?: string | null
           created_at?: string
           id?: string
           points_awarded?: number
-          underdog_team_id?: string | null
+          top_scorer?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -276,13 +255,6 @@ export type Database = {
           {
             foreignKeyName: "special_predictions_champion_team_id_fkey"
             columns: ["champion_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "special_predictions_underdog_team_id_fkey"
-            columns: ["underdog_team_id"]
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
@@ -359,24 +331,18 @@ export type Database = {
           group_picks_locked: boolean
           id: number
           knockout_picks_locked: boolean
-          special_picks_locked: boolean
-          community_predictions_visible: boolean
         }
         Insert: {
           current_phase?: Database["public"]["Enums"]["tournament_phase"]
           group_picks_locked?: boolean
           id?: number
           knockout_picks_locked?: boolean
-          special_picks_locked?: boolean
-          community_predictions_visible?: boolean
         }
         Update: {
           current_phase?: Database["public"]["Enums"]["tournament_phase"]
           group_picks_locked?: boolean
           id?: number
           knockout_picks_locked?: boolean
-          special_picks_locked?: boolean
-          community_predictions_visible?: boolean
         }
         Relationships: []
       }
@@ -403,6 +369,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_ranking: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          id: string
+          total_pts: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
