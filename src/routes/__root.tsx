@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 
 import { AuthProvider } from "@/lib/auth-context";
-import AppLayout from "@/components/AppLayout";
 
 function NotFoundComponent() {
   return (
@@ -40,9 +39,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppLayout>
-          <Outlet />
-        </AppLayout>
+        <Outlet />
         <Toaster position="top-right" richColors theme="dark" />
       </AuthProvider>
     </QueryClientProvider>
