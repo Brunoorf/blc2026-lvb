@@ -36,12 +36,12 @@ function Ranking() {
         if (!m || !m.is_finished || m.home_score == null || m.away_score == null) continue;
 
         let pts = 0;
-        if (p.home_score === m.home_score && p.away_score === m.away_score) {
+        if (p.home_score === m.home_score! && p.away_score === m.away_score!) {
           pts = 25; // exact score
         } else if (
-          (p.home_score > p.away_score && m.home_score > m.away_score) ||
-          (p.home_score < p.away_score && m.home_score < m.away_score) ||
-          (p.home_score === p.away_score && m.home_score === m.away_score)
+          (p.home_score > p.away_score && m.home_score! > m.away_score!) ||
+          (p.home_score < p.away_score && m.home_score! < m.away_score!) ||
+          (p.home_score === p.away_score && m.home_score! === m.away_score!)
         ) {
           pts = 10; // correct result
         }
