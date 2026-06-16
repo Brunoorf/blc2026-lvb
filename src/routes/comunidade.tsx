@@ -11,7 +11,7 @@ import TeamFlag from "@/components/TeamFlag";
 
 export const Route = createFileRoute("/comunidade")({
   component: () => <AuthGate><Comunidade /></AuthGate>,
-});
+} as any);
 
 function Comunidade() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -131,7 +131,7 @@ function Comunidade() {
                 ) : (
                   filteredPreds.map((pred) => {
                     const match = matchesById.get(pred.match_id);
-                    if (!match) return null;
+                    if (!match || !match.home_team_id || !match.away_team_id) return null;
 
                     const homeTeam = teamsById.get(match.home_team_id);
                     const awayTeam = teamsById.get(match.away_team_id);
