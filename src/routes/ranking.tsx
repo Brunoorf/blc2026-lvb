@@ -34,23 +34,30 @@ function Ranking() {
         supabase.from("teams").select("*"),
       ]);
 
-      // Use points_awarded from database (already calculated correctly)
-      const matchPts = new Map<string, number>();
-      (preds.data ?? []).forEach((p) => matchPts.set(p.user_id, (matchPts.get(p.user_id) ?? 0) + (p.points_awarded ?? 0)));
+      const predsByUser = new Map<string, number>();
+      const koByUser = new Map<string, number>();
+      const specialByUser = new Map<string, number>();
 
-      const koPts = new Map<string, number>();
-      const specialPts = new Map<string, number>();
-      (ko.data ?? []).forEach((r) => koPts.set(r.user_id, (koPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
-      (special.data ?? []).forEach((r) => specialPts.set(r.user_id, (specialPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
+      (preds.data ?? []).forEach((p) => {
+        predsByUser.set(p.user_id, (predsByUser.get(p.user_id) ?? 0) + (p.points_awarded ?? 0));
+      });
 
-      const specialByUserId = new Map((special.data ?? []).map((s) => [s.user_id, s]));
+      (ko.data ?? []).forEach((p) => {
+        koByUser.set(p.user_id, (koByUser.get(p.user_id) ?? 0) + (p.points_awarded ?? 0));
+      });
+
+      (special.data ?? []).forEach((p) => {
+        specialByUser.set(p.user_id, (specialByUser.get(p.user_id) ?? 0) + (p.points_awarded ?? 0));
+      });
+
+      const specialById = new Map((special.data ?? []).map((s) => [s.user_id, s]));
       const teamsById = new Map((teams.data ?? []).map((t) => [t.id, t]));
 
       const ranking = (profiles.data ?? []).map((p) => {
-        const sp = specialByUserId.get(p.id);
-        const mp = matchPts.get(p.id) ?? 0;
-        const kp = koPts.get(p.id) ?? 0;
-        const spp = specialPts.get(p.id) ?? 0;
+        const mp = predsByUser.get(p.id) ?? 0;
+        const kp = koByUser.get(p.id) ?? 0;
+        const spp = specialByUser.get(p.id) ?? 0;
+        const sp = specialById.get(p.id);
         return {
           ...p,
           points: mp + kp + spp,
@@ -72,7 +79,7 @@ function Ranking() {
 
   useEffect(() => {
     loadRanking();
-    const interval = setInterval(loadRanking, 15000);
+    const interval = setInterval(loadRanking, 10000);
     return () => clearInterval(interval);
   }, []);
 
