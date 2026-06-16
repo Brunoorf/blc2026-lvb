@@ -50,11 +50,25 @@ export async function recomputeAllPoints() {
   // 1) Match predictions (group + KO with finished real result)
   const finishedMatches = matches.filter((m) => m.is_finished && m.home_score != null && m.away_score != null);
   const finishedById = new Map(finishedMatches.map((m) => [m.id, m]));
+  console.log(`🔍 Loaded ${matches.length} total matches, ${finishedMatches.length} finished with scores`);
+  if (finishedMatches.length === 0) console.warn("⚠️ NO FINISHED MATCHES FOUND!");
 
   const predUpdates: Array<{ id: string; points_awarded: number }> = [];
   for (const p of predsRes.data ?? []) {
     const m = finishedById.get(p.match_id);
     const pts = m ? scoreMatchPrediction(p.home_score, p.away_score, m.home_score!, m.away_score!, rules, p.advancing_team_id, m.advancing_team_id) : 0;
+
+    // Debug: log France vs Senegal specifically
+    if (p.home_score === 3 && p.away_score === 1) {
+      console.log(`🇫🇷 France 3x1 prediction found: id=${p.id}, match_id=${p.match_id}, pts=${pts}, matchFound=${!!m}`);
+      if (m) console.log(`   Match data: is_finished=${m.is_finished}, scores=${m.home_score}x${m.away_score}`);
+      else console.warn(`   ❌ Match NOT FOUND in finishedById`);
+    }
+
+    if (!m) {
+      console.warn(`⚠️ Match not found for prediction ${p.id}: match_id=${p.match_id}`);
+      console.log(`   Available finished matches: ${Array.from(finishedById.keys()).slice(0, 5).join(", ")}...`);
+    }
     predUpdates.push({ id: p.id, points_awarded: pts });
   }
 

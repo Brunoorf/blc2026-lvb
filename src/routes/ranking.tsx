@@ -16,20 +16,43 @@ function Ranking() {
   const { data, isLoading } = useQuery({
     queryKey: ["ranking"],
     queryFn: async () => {
-      const [profiles, preds, ko, special, teams] = await Promise.all([
+      const [profiles, preds, matches, ko, special, teams] = await Promise.all([
         supabase.from("profiles").select("id, display_name, avatar_url"),
-        supabase.from("predictions").select("user_id, points_awarded"),
+        supabase.from("predictions").select("*"),
+        supabase.from("matches").select("*"),
         supabase.from("knockout_predictions").select("user_id, points_awarded"),
         supabase.from("special_predictions").select("*"),
         supabase.from("teams").select("*"),
       ]);
 
-      // Compute detailed breakdowns per user
+      const predictions = preds.data ?? [];
+      const allMatches = matches.data ?? [];
+      const matchesById = new Map(allMatches.map((m) => [m.id, m]));
+
+      // Calculate match points in real-time based on predictions vs actual results
       const matchPts = new Map<string, number>();
+      for (const p of predictions) {
+        const m = matchesById.get(p.match_id);
+        if (!m || !m.is_finished) continue;
+
+        let pts = 0;
+        if (p.home_score === m.home_score && p.away_score === m.away_score) {
+          pts = 25; // exact score
+        } else if (
+          (p.home_score > p.away_score && m.home_score > m.away_score) ||
+          (p.home_score < p.away_score && m.home_score < m.away_score) ||
+          (p.home_score === p.away_score && m.home_score === m.away_score)
+        ) {
+          pts = 10; // correct result
+        }
+
+        matchPts.set(p.user_id, (matchPts.get(p.user_id) ?? 0) + pts);
+      }
+
+      // KO and special points from database
       const koPts = new Map<string, number>();
       const specialPts = new Map<string, number>();
 
-      (preds.data ?? []).forEach((r) => matchPts.set(r.user_id, (matchPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
       (ko.data ?? []).forEach((r) => koPts.set(r.user_id, (koPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
       (special.data ?? []).forEach((r) => specialPts.set(r.user_id, (specialPts.get(r.user_id) ?? 0) + (r.points_awarded ?? 0)));
 
@@ -55,6 +78,7 @@ function Ranking() {
         };
       }).sort((a, b) => b.points - a.points);
     },
+    refetchInterval: 30000, // Refetch every 30 seconds to stay fresh
   });
 
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;

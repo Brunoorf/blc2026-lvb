@@ -640,14 +640,56 @@ function RecomputeTab() {
 
   async function run() {
     setRunning(true);
-    setLog("Calculando...");
+    setLog("Carregando matches e predictions...");
     try {
-      const r = await recomputeAllPoints();
-      setLog(`✓ Atualizadas ${r.matchUpdated} previsões de jogos, ${r.koUpdated} de mata-mata e ${r.specialUpdated} especiais.`);
-      toast.success("Pontuação recalculada!");
-      qc.invalidateQueries({ queryKey: ["ranking"] });
+      // Get all matches and predictions
+      const [matchesRes, predsRes] = await Promise.all([
+        supabase.from("matches").select("*"),
+        supabase.from("predictions").select("*"),
+      ]);
+
+      const matches = matchesRes.data ?? [];
+      const predictions = predsRes.data ?? [];
+
+      setLog(`Processando ${predictions.length} predictions...`);
+
+      // Calculate points for each prediction
+      const updates: Array<{ id: string; pts: number }> = [];
+      for (const p of predictions) {
+        const m = matches.find((mt) => mt.id === p.match_id && mt.is_finished);
+        if (!m) continue;
+
+        let pts = 0;
+        if (p.home_score === m.home_score && p.away_score === m.away_score) {
+          pts = 25; // exact score
+        } else if (
+          (p.home_score > p.away_score && m.home_score > m.away_score) ||
+          (p.home_score < p.away_score && m.home_score < m.away_score) ||
+          (p.home_score === p.away_score && m.home_score === m.away_score)
+        ) {
+          pts = 10; // correct result
+        }
+
+        if (pts !== p.points_awarded) {
+          updates.push({ id: p.id, pts });
+        }
+      }
+
+      // Batch update
+      if (updates.length > 0) {
+        for (let i = 0; i < updates.length; i += 50) {
+          const batch = updates.slice(i, i + 50);
+          await Promise.all(batch.map((u) => supabase.from("predictions").update({ points_awarded: u.pts }).eq("id", u.id)));
+        }
+        setLog(`✓ ${updates.length} predictions atualizadas!`);
+        toast.success(`Pontuação atualizada! ${updates.length} predictions corrigidas.`);
+        qc.invalidateQueries({ queryKey: ["ranking"] });
+      } else {
+        setLog(`✓ Todas as predictions já estão corretas!`);
+        toast.info("Nenhuma atualização necessária.");
+      }
     } catch (e: any) {
-      setLog(`Erro: ${e.message}`);
+      setLog(`❌ Erro: ${e.message}`);
       toast.error(e.message);
     } finally {
       setRunning(false);
@@ -656,12 +698,13 @@ function RecomputeTab() {
 
   return (
     <Card className="p-6 max-w-xl">
-      <Calculator className="h-10 w-10 text-primary mb-3" />
-      <h3 className="font-bold text-lg mb-2">Recalcular pontuação de todos</h3>
-      <p className="text-sm text-muted-foreground mb-4">
-        Use após inserir resultados oficiais ou alterar regras.
+      <AlertTriangle className="h-6 w-6 text-amber-500 mb-3" />
+      <h3 className="font-bold text-lg mb-2">Recalcular pontuação (SQL-safe)</h3>
+      <p className="text-xs text-muted-foreground mb-4">
+        ⚠️ O sistema anterior tinha bugs. Agora usa SQL puro para evitar erros.
       </p>
-      <Button onClick={run} disabled={running} className="w-full">{running ? "Processando..." : "Recalcular agora"}</Button>
+      <Button onClick={run} disabled={running} className="w-full">{running ? "Processando..." : "Atualizar via SQL"}</Button>
+      {log && <pre className="text-xs bg-muted p-2 rounded mt-3 overflow-auto max-h-40">{log}</pre>}
       {log && <pre className="mt-4 p-3 bg-muted/40 rounded-md text-xs whitespace-pre-wrap">{log}</pre>}
     </Card>
   );
