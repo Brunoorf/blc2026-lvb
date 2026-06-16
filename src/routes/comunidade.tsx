@@ -41,19 +41,17 @@ function Comunidade() {
 
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
 
-  const isLocked = data?.settings?.group_picks_locked || data?.settings?.knockout_picks_locked;
-
-  if (!isLocked) {
+  if (!data?.settings?.community_predictions_visible) {
     return (
       <Card className="p-12 text-center max-w-2xl mx-auto border-amber-500/50 bg-amber-500/5">
         <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-3" />
         <h2 className="text-xl font-bold mb-2">Visualização desabilitada</h2>
         <p className="text-muted-foreground mb-4">
-          A visualização de palpites está desabilitada enquanto o período de alteração está ativo.
+          O admin desabilitou a visualização de palpites no momento.
           Isso evita que os participantes copiem os palpites de quem está ganhando! 🔒
         </p>
         <p className="text-sm text-muted-foreground">
-          A visualização estará disponível quando o período de palpites for fechado.
+          A visualização estará disponível em breve.
         </p>
       </Card>
     );

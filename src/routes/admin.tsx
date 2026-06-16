@@ -78,6 +78,7 @@ function TournamentTab() {
   const [groupLocked, setGroupLocked] = useState(data?.group_picks_locked ?? false);
   const [koLocked, setKoLocked] = useState(data?.knockout_picks_locked ?? false);
   const [specialLocked, setSpecialLocked] = useState(data?.special_picks_locked ?? false);
+  const [communityVisible, setCommunityVisible] = useState(data?.community_predictions_visible ?? false);
 
   useEffect(() => {
     if (data) {
@@ -85,6 +86,7 @@ function TournamentTab() {
       setGroupLocked(data.group_picks_locked);
       setKoLocked(data.knockout_picks_locked);
       setSpecialLocked(data.special_picks_locked);
+      setCommunityVisible(data.community_predictions_visible);
     }
   }, [data]);
 
@@ -94,6 +96,7 @@ function TournamentTab() {
       group_picks_locked: groupLocked,
       knockout_picks_locked: koLocked,
       special_picks_locked: specialLocked,
+      community_predictions_visible: communityVisible,
     } as any).eq("id", 1);
     if (error) return toast.error(error.message);
     toast.success("Configurações atualizadas!");
@@ -125,7 +128,10 @@ function TournamentTab() {
         <div><p className="font-medium">Travar palpites especiais</p><p className="text-xs text-muted-foreground">Usuários não poderão editar campeão e zebra.</p></div>
         <Switch checked={specialLocked} onCheckedChange={setSpecialLocked} />
       </div>
-
+      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40">
+        <div><p className="font-medium">Permitir visualização de palpites</p><p className="text-xs text-muted-foreground">Mostrar palpites na página "Comunidade".</p></div>
+        <Switch checked={communityVisible} onCheckedChange={setCommunityVisible} />
+      </div>
 
       <Button onClick={save} className="w-full"><Save className="h-4 w-4 mr-2" /> Salvar</Button>
     </Card>
