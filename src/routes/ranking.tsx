@@ -78,7 +78,8 @@ function Ranking() {
         };
       }).sort((a, b) => b.points - a.points);
     },
-    refetchInterval: 30000, // Refetch every 30 seconds to stay fresh
+    staleTime: 0, // Always fetch fresh data
+    refetchInterval: 10000, // Refetch every 10 seconds
   });
 
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
