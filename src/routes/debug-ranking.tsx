@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 
-export const Route = createFileRoute("/debug-ranking")({
+export const Route = (createFileRoute as any)("/debug-ranking")({
   component: DebugRanking,
 });
 
