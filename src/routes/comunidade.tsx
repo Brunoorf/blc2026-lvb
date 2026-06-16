@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { RootRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Users, ChevronRight, Check, X } from "lucide-react";
@@ -9,9 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import TeamFlag from "@/components/TeamFlag";
 
-export const Route = createFileRoute("/comunidade")({
+export const Route = (createFileRoute as any)("/comunidade")({
   component: () => <AuthGate><Comunidade /></AuthGate>,
-} as any);
+});
 
 function Comunidade() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
