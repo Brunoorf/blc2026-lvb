@@ -36,6 +36,54 @@ function Home() {
     enabled: !!user,
   });
 
+  const { data: finishedResults } = useQuery({
+    queryKey: ["finished-results", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("predictions")
+        .select(`
+          id, home_score, away_score, points_awarded,
+          match_id,
+          matches:match_id(home_score, away_score, is_finished, home_team_id, away_team_id),
+          teams_home:matches(home_team_id),
+          teams_away:matches(away_team_id)
+        `)
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+
+      if (!data) return [];
+
+      // Get teams info
+      const { data: teams } = await supabase.from("teams").select("id, name, code, flag");
+      const teamsMap = new Map((teams ?? []).map((t: any) => [t.id, t]));
+
+      // Get matches info
+      const { data: matches } = await supabase.from("matches").select("id, home_team_id, away_team_id, home_score, away_score, is_finished");
+      const matchesMap = new Map((matches ?? []).map((m: any) => [m.id, m]));
+
+      return (data ?? [])
+        .map((p: any) => {
+          const match = matchesMap.get(p.match_id);
+          if (!match?.is_finished) return null;
+
+          const homeTeam = teamsMap.get(match.home_team_id);
+          const awayTeam = teamsMap.get(match.away_team_id);
+
+          return {
+            id: p.id,
+            homeTeam,
+            awayTeam,
+            prediction: `${p.home_score}x${p.away_score}`,
+            official: `${match.home_score}x${match.away_score}`,
+            points: p.points_awarded
+          };
+        })
+        .filter(Boolean)
+        .sort((a: any, b: any) => (b.points ?? 0) - (a.points ?? 0));
+    },
+    enabled: !!user,
+  });
+
   const phaseLabel = stats?.currentPhase === "groups" ? "Fase de Grupos"
     : stats?.currentPhase === "knockout" ? "Mata-mata"
     : "Encerrado";
@@ -75,6 +123,48 @@ function Home() {
         <ActionCard to="/palpites" icon={ListChecks} title="Palpites" desc="Placar das 72 partidas da fase de grupos e jogos do mata-mata." />
         <ActionCard to="/ranking" icon={BarChart3} title="Ranking global" desc="Compare sua pontuação com os demais participantes." />
       </section>
+
+      {finishedResults && finishedResults.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-bold">Resultado Finalizado</h2>
+          <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
+            {finishedResults.map((result: any) => (
+              <Card key={result.id} className="p-4 border-border flex-shrink-0">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">{result.homeTeam?.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {result.points > 0 ? (
+                      <span className="text-green-500">✓</span>
+                    ) : (
+                      <span className="text-red-500">✗</span>
+                    )}
+                    <span className="font-bold text-sm">{result.points > 0 ? `+${result.points}` : "0"}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center text-xs mb-3">
+                  <div>
+                    <p className="text-muted-foreground">Previsão</p>
+                    <p className="font-bold">{result.prediction}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Oficial</p>
+                    <p className="font-bold">{result.official}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Pontos</p>
+                    <p className="font-bold">{result.points}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{result.awayTeam?.name}</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
