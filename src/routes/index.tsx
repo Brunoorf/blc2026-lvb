@@ -7,6 +7,11 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 
+function countryCodeToFlag(code: string): string {
+  if (!code || code.length !== 2) return code;
+  return (String.fromCodePoint(0x1f1e6 + code.charCodeAt(0) - 65, 0x1f1e6 + code.charCodeAt(1) - 65)) || code;
+}
+
 export const Route = createFileRoute("/")({
   component: () => <AuthGate><Home /></AuthGate>,
 });
@@ -133,7 +138,7 @@ function Home() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-1.5">
                     {result.homeTeam?.flag && (
-                      <span className="text-xl">{result.homeTeam.flag}</span>
+                      <span className="text-xl">{countryCodeToFlag(result.homeTeam.flag)}</span>
                     )}
                     <span className="font-medium text-sm">{result.homeTeam?.name}</span>
                   </div>
@@ -162,7 +167,7 @@ function Home() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   {result.awayTeam?.flag && (
-                    <span className="text-xl">{result.awayTeam.flag}</span>
+                    <span className="text-xl">{countryCodeToFlag(result.awayTeam.flag)}</span>
                   )}
                   <span className="font-medium text-sm">{result.awayTeam?.name}</span>
                 </div>
