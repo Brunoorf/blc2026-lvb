@@ -6,11 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-
-function countryCodeToFlag(code: string): string {
-  if (!code || code.length !== 2) return code;
-  return (String.fromCodePoint(0x1f1e6 + code.charCodeAt(0) - 65, 0x1f1e6 + code.charCodeAt(1) - 65)) || code;
-}
+import TeamFlag from "@/components/TeamFlag";
 
 export const Route = createFileRoute("/")({
   component: () => <AuthGate><Home /></AuthGate>,
@@ -137,8 +133,8 @@ function Home() {
               <Card key={result.id} className="p-4 border-border flex-shrink-0">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-1.5">
-                    {result.homeTeam?.flag && (
-                      <span className="text-xl">{countryCodeToFlag(result.homeTeam.flag)}</span>
+                    {result.homeTeam && (
+                      <TeamFlag code={result.homeTeam.code} fallback={result.homeTeam.flag} size={20} />
                     )}
                     <span className="font-medium text-sm">{result.homeTeam?.name}</span>
                   </div>
@@ -166,8 +162,8 @@ function Home() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  {result.awayTeam?.flag && (
-                    <span className="text-xl">{countryCodeToFlag(result.awayTeam.flag)}</span>
+                  {result.awayTeam && (
+                    <TeamFlag code={result.awayTeam.code} fallback={result.awayTeam.flag} size={20} />
                   )}
                   <span className="font-medium text-sm">{result.awayTeam?.name}</span>
                 </div>
