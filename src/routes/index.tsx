@@ -131,7 +131,10 @@ function Home() {
             {finishedResults.map((result: any) => (
               <Card key={result.id} className="p-4 border-border flex-shrink-0">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    {result.homeTeam?.flag && (
+                      <span className="text-xl">{result.homeTeam.flag}</span>
+                    )}
                     <span className="font-medium text-sm">{result.homeTeam?.name}</span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -157,7 +160,10 @@ function Home() {
                     <p className="font-bold">{result.points}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  {result.awayTeam?.flag && (
+                    <span className="text-xl">{result.awayTeam.flag}</span>
+                  )}
                   <span className="font-medium text-sm">{result.awayTeam?.name}</span>
                 </div>
               </Card>
