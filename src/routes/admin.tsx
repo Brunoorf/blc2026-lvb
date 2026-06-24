@@ -642,7 +642,7 @@ function RecomputeTab() {
     setRunning(true);
     setLog("Recalculando via SQL...");
     try {
-      const result = await supabase.rpc('score_all_predictions');
+      const result = await (supabase.rpc as any)('score_all_predictions');
       if (result.error) throw result.error;
 
       const updated = result.data ?? 0;
