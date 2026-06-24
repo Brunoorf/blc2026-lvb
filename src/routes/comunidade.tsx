@@ -23,7 +23,7 @@ function Comunidade() {
     queryFn: async () => {
       const [profiles, predictions, matches, teams, settings] = await Promise.all([
         supabase.from("profiles").select("id, display_name, avatar_url").order("display_name"),
-        supabase.from("predictions").select("*"),
+        supabase.from("predictions").select("*").range(0, 9999),
         supabase.from("matches").select("*"),
         supabase.from("teams").select("*"),
         supabase.from("tournament_settings").select("*").maybeSingle(),
