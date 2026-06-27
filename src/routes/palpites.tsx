@@ -492,43 +492,44 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
 
     const r16Updates: Array<{ matchNumber: number; teamId: string; isHome: boolean }> = [];
 
-    r32Matches
-      .filter((m: any) => m.phase === "r32")
-      .forEach((m: any) => {
-        const s = scoresData[m.id];
-        if (!s || s.h === "" || s.a === "") {
-          console.log(`⏭️ R32 ${m.match_number}: vazio, ignorando`);
-          return;
-        }
+    const r32List = r32Matches.filter((m: any) => m.phase === "r32").sort((a: any, b: any) => a.match_number - b.match_number);
 
-        const h = parseInt(s.h);
-        const a = parseInt(s.a);
-        if (Number.isNaN(h) || Number.isNaN(a)) {
-          console.log(`⏭️ R32 ${m.match_number}: score inválido`);
-          return;
-        }
+    r32List.forEach((m: any, index: number) => {
+      const s = scoresData[m.id];
+      if (!s || s.h === "" || s.a === "") {
+        console.log(`⏭️ R32 ${index + 1}: vazio, ignorando`);
+        return;
+      }
 
-        let advancingTeamId = null;
-        if (h === a && s.adv) {
-          advancingTeamId = s.adv;
-          console.log(`✅ R32 ${m.match_number}: empate, avança ${s.adv}`);
-        } else if (h > a) {
-          advancingTeamId = m.home_team_id;
-          console.log(`✅ R32 ${m.match_number}: casa vence, avança ${m.home_team_id}`);
-        } else if (a > h) {
-          advancingTeamId = m.away_team_id;
-          console.log(`✅ R32 ${m.match_number}: visitante vence, avança ${m.away_team_id}`);
-        }
+      const h = parseInt(s.h);
+      const a = parseInt(s.a);
+      if (Number.isNaN(h) || Number.isNaN(a)) {
+        console.log(`⏭️ R32 ${index + 1}: score inválido`);
+        return;
+      }
 
-        if (!advancingTeamId) return;
+      let advancingTeamId = null;
+      if (h === a && s.adv) {
+        advancingTeamId = s.adv;
+        console.log(`✅ R32 ${index + 1}: empate, avança ${s.adv}`);
+      } else if (h > a) {
+        advancingTeamId = m.home_team_id;
+        console.log(`✅ R32 ${index + 1}: casa vence, avança ${m.home_team_id}`);
+      } else if (a > h) {
+        advancingTeamId = m.away_team_id;
+        console.log(`✅ R32 ${index + 1}: visitante vence, avança ${m.away_team_id}`);
+      }
 
-        const r32Num = m.match_number;
-        const r16Num = 17 + Math.floor((r32Num - 1) / 2);
-        const isHome = (r32Num - 1) % 2 === 0;
+      if (!advancingTeamId) return;
 
-        console.log(`📍 R32-${r32Num} → R16-${r16Num} ${isHome ? "home" : "away"}`);
-        r16Updates.push({ matchNumber: r16Num, teamId: advancingTeamId, isHome });
-      });
+      // Usar índice relativo (0-15) em vez de match_number absoluto
+      const r32Index = index; // 0-15
+      const r16Num = 17 + Math.floor(r32Index / 2); // 17-24
+      const isHome = r32Index % 2 === 0;
+
+      console.log(`📍 R32-${index + 1} (match ${m.match_number}) → R16-${r16Num} ${isHome ? "home" : "away"}`);
+      r16Updates.push({ matchNumber: r16Num, teamId: advancingTeamId, isHome });
+    });
 
     console.log(`📊 Total de updates: ${r16Updates.length}`);
 
