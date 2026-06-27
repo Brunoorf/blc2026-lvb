@@ -488,9 +488,7 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
   }
 
   async function populateR16FromR32Predictions(r32Matches: any[], scoresData: any) {
-    // Mapear R32 palpites → R16 vazio
-    // R32-1 e R32-2 → R16-1 (home/away)
-    // R32-3 e R32-4 → R16-2, etc
+    console.log("🔄 Iniciando cascata de R32 → R16");
 
     const r16Updates: Array<{ matchNumber: number; teamId: string; isHome: boolean }> = [];
 
@@ -498,49 +496,74 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
       .filter((m: any) => m.phase === "r32")
       .forEach((m: any) => {
         const s = scoresData[m.id];
-        if (!s || s.h === "" || s.a === "") return;
+        if (!s || s.h === "" || s.a === "") {
+          console.log(`⏭️ R32 ${m.match_number}: vazio, ignorando`);
+          return;
+        }
 
         const h = parseInt(s.h);
         const a = parseInt(s.a);
-        if (Number.isNaN(h) || Number.isNaN(a)) return;
+        if (Number.isNaN(h) || Number.isNaN(a)) {
+          console.log(`⏭️ R32 ${m.match_number}: score inválido`);
+          return;
+        }
 
-        // Determinar quem avança
         let advancingTeamId = null;
         if (h === a && s.adv) {
           advancingTeamId = s.adv;
+          console.log(`✅ R32 ${m.match_number}: empate, avança ${s.adv}`);
         } else if (h > a) {
           advancingTeamId = m.home_team_id;
+          console.log(`✅ R32 ${m.match_number}: casa vence, avança ${m.home_team_id}`);
         } else if (a > h) {
           advancingTeamId = m.away_team_id;
+          console.log(`✅ R32 ${m.match_number}: visitante vence, avança ${m.away_team_id}`);
         }
 
         if (!advancingTeamId) return;
 
-        // Calcular qual jogo de R16 este R32 alimenta
         const r32Num = m.match_number;
         const r16Num = 17 + Math.floor((r32Num - 1) / 2);
         const isHome = (r32Num - 1) % 2 === 0;
 
+        console.log(`📍 R32-${r32Num} → R16-${r16Num} ${isHome ? "home" : "away"}`);
         r16Updates.push({ matchNumber: r16Num, teamId: advancingTeamId, isHome });
       });
 
-    // Atualizar R16 com times previstos
+    console.log(`📊 Total de updates: ${r16Updates.length}`);
+
     for (const update of r16Updates) {
-      const { data: r16Match } = await supabase
+      const { data: r16Match, error: queryError } = await supabase
         .from("matches")
         .select("id")
         .eq("match_number", update.matchNumber)
         .eq("phase", "r16")
         .single();
 
-      if (!r16Match) continue;
+      if (queryError) {
+        console.error(`❌ Erro ao buscar R16-${update.matchNumber}:`, queryError);
+        continue;
+      }
+
+      if (!r16Match) {
+        console.warn(`⚠️ R16-${update.matchNumber} não encontrado`);
+        continue;
+      }
 
       const field = update.isHome ? "home_team_id" : "away_team_id";
-      await supabase
+      const { error: updateError } = await supabase
         .from("matches")
         .update({ [field]: update.teamId } as any)
         .eq("id", r16Match.id);
+
+      if (updateError) {
+        console.error(`❌ Erro ao atualizar R16-${update.matchNumber}:`, updateError);
+      } else {
+        console.log(`✅ R16-${update.matchNumber} atualizado`);
+      }
     }
+
+    console.log("✨ Cascata concluída");
   }
 
   const byPhase: Record<string, any[]> = {};
