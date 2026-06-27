@@ -533,21 +533,27 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
 
     console.log(`📊 Total de updates: ${r16Updates.length}`);
 
-    for (const update of r16Updates) {
-      const { data: r16Match, error: queryError } = await supabase
-        .from("matches")
-        .select("id")
-        .eq("match_number", update.matchNumber)
-        .eq("phase", "r16")
-        .single();
+    // Carregar TODOS os R16 existentes (sem depender de match_number específico)
+    const { data: allR16Matches, error: fetchError } = await supabase
+      .from("matches")
+      .select("id, round_label, match_number")
+      .eq("phase", "r16")
+      .order("match_number");
 
-      if (queryError) {
-        console.error(`❌ Erro ao buscar R16-${update.matchNumber}:`, queryError);
-        continue;
-      }
+    if (fetchError) {
+      console.error("❌ Erro ao carregar R16:", fetchError);
+      return;
+    }
+
+    console.log(`📊 Encontrados ${allR16Matches?.length ?? 0} jogos de R16`);
+
+    // Atualizar R16 com times previstos usando índice
+    for (let i = 0; i < (r16Updates?.length ?? 0); i++) {
+      const update = r16Updates[i];
+      const r16Match = allR16Matches?.[i];
 
       if (!r16Match) {
-        console.warn(`⚠️ R16-${update.matchNumber} não encontrado`);
+        console.warn(`⚠️ R16[${i}] não encontrado`);
         continue;
       }
 
@@ -558,9 +564,9 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
         .eq("id", r16Match.id);
 
       if (updateError) {
-        console.error(`❌ Erro ao atualizar R16-${update.matchNumber}:`, updateError);
+        console.error(`❌ Erro ao atualizar R16[${i}]:`, updateError);
       } else {
-        console.log(`✅ R16-${update.matchNumber} atualizado`);
+        console.log(`✅ R16[${i}] (${r16Match.round_label}) atualizado`);
       }
     }
 
