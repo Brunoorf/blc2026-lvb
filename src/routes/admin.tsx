@@ -221,7 +221,8 @@ function ResultsTab() {
     // Se R32 foi finalizado, popula R16 automaticamente
     if (s.finished && mt?.phase === "r32") {
       try {
-        await populateNextPhase(mt, s.adv || (h > a ? mt.home_team_id : mt.away_team_id));
+        const advTeam = s.adv || (h > a ? mt.home_team_id : mt.away_team_id);
+        if (advTeam) await populateNextPhase(mt, advTeam);
       } catch (e: any) {
         console.warn("Aviso: não foi possível popular R16", e);
       }
@@ -297,7 +298,7 @@ function ResultsTab() {
     const updateField = isHome ? "home_team_id" : "away_team_id";
     const { error } = await supabase
       .from("matches")
-      .update({ [updateField]: advancingTeamId })
+      .update({ [updateField]: advancingTeamId } as any)
       .eq("id", r16Match.id);
 
     if (!error) qc.invalidateQueries({ queryKey: ["admin-matches"] });
@@ -464,7 +465,7 @@ function KnockoutBuilderTab() {
       ...finalMatches,
     ];
 
-    const { error } = await supabase.from("matches").insert(allMatches);
+    const { error } = await supabase.from("matches").insert(allMatches as any);
     if (error) throw error;
   }
 
