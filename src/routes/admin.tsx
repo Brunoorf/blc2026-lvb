@@ -209,7 +209,7 @@ function ResultsTab() {
       return toast.error("Se o jogo do mata-mata terminou empatado, selecione quem avança!");
     }
 
-    const update: any = {
+    const update: any = { 
       is_finished: s.finished,
       advancing_team_id: (isKO && h === a) ? (s.adv || null) : null
     };
@@ -218,16 +218,8 @@ function ResultsTab() {
     const { error } = await supabase.from("matches").update(update).eq("id", id);
     if (error) return toast.error(error.message);
 
-    // Se R32 foi finalizado, popula R16 automaticamente
-    if (s.finished && mt?.phase === "r32") {
-      try {
-        const advTeam = s.adv || (h > a ? mt.home_team_id : mt.away_team_id);
-        if (advTeam) await populateNextPhase(mt, advTeam);
-      } catch (e: any) {
-        console.warn("Aviso: não foi possível popular R16", e);
-      }
-    }
     toast.success("Resultado salvo!");
+    // Points are applied automatically by the DB trigger (trg_auto_score_on_finish).
     qc.invalidateQueries({ queryKey: ["admin-matches"] });
   }
 
@@ -279,30 +271,6 @@ function ResultsTab() {
       </div>
     </Card>
   );
-
-  async function populateNextPhase(r32Match: any, advancingTeamId: string) {
-    // Mapear R32 -> R16: jogos 1-2 -> R16 1 home/away, 3-4 -> R16 2, etc
-    const r32Num = r32Match.match_number;
-    const r16Num = 17 + Math.floor((r32Num - 1) / 2);
-    const isHome = (r32Num - 1) % 2 === 0;
-
-    const { data: r16Match } = await supabase
-      .from("matches")
-      .select("id")
-      .eq("match_number", r16Num)
-      .eq("phase", "r16")
-      .single();
-
-    if (!r16Match) return;
-
-    const updateField = isHome ? "home_team_id" : "away_team_id";
-    const { error } = await supabase
-      .from("matches")
-      .update({ [updateField]: advancingTeamId } as any)
-      .eq("id", r16Match.id);
-
-    if (!error) qc.invalidateQueries({ queryKey: ["admin-matches"] });
-  }
 }
 
 /* ── Knockout Builder (NEW) ── */
@@ -416,57 +384,10 @@ function KnockoutBuilderTab() {
        if (toInsert.length === 0) return;
     }
 
-    const { error: r32Error } = await supabase.from("matches").insert(toInsert);
-    if (r32Error) return toast.error(r32Error.message);
-
-    // Após gerar R32, criar cascata de fases
-    try {
-      await createKnockoutCascade(nextMatchNum + 16);
-    } catch (e: any) {
-      toast.error(`R32 criado mas cascata falhou: ${e.message}`);
-    }
-
-    toast.success(`${toInsert.length} jogos de 16-avos gerados com sucesso! (cascata criada)`);
+    const { error } = await supabase.from("matches").insert(toInsert);
+    if (error) return toast.error(error.message);
+    toast.success(`${toInsert.length} jogos de 16-avos gerados com sucesso!`);
     qc.invalidateQueries({ queryKey: ["ko-builder"] });
-  }
-
-  async function createKnockoutCascade(startMatchNum: number) {
-    const r16Matches = [
-      { phase: "r16", round_label: "Oitavas 1", match_number: startMatchNum },
-      { phase: "r16", round_label: "Oitavas 2", match_number: startMatchNum + 1 },
-      { phase: "r16", round_label: "Oitavas 3", match_number: startMatchNum + 2 },
-      { phase: "r16", round_label: "Oitavas 4", match_number: startMatchNum + 3 },
-      { phase: "r16", round_label: "Oitavas 5", match_number: startMatchNum + 4 },
-      { phase: "r16", round_label: "Oitavas 6", match_number: startMatchNum + 5 },
-      { phase: "r16", round_label: "Oitavas 7", match_number: startMatchNum + 6 },
-      { phase: "r16", round_label: "Oitavas 8", match_number: startMatchNum + 7 },
-    ];
-
-    const qfMatches = [
-      { phase: "qf", round_label: "Quartas 1", match_number: startMatchNum + 8 },
-      { phase: "qf", round_label: "Quartas 2", match_number: startMatchNum + 9 },
-      { phase: "qf", round_label: "Quartas 3", match_number: startMatchNum + 10 },
-      { phase: "qf", round_label: "Quartas 4", match_number: startMatchNum + 11 },
-    ];
-
-    const sfMatches = [
-      { phase: "sf", round_label: "Semifinal 1", match_number: startMatchNum + 12 },
-      { phase: "sf", round_label: "Semifinal 2", match_number: startMatchNum + 13 },
-    ];
-
-    const finalMatches = [
-      { phase: "final", round_label: "Final", match_number: startMatchNum + 14 },
-    ];
-
-    const allMatches = [
-      ...r16Matches,
-      ...qfMatches,
-      ...sfMatches,
-      ...finalMatches,
-    ];
-
-    const { error } = await supabase.from("matches").insert(allMatches as any);
-    if (error) throw error;
   }
 
   const phases: MatchPhase[] = ["r32", "r16", "qf", "sf", "final"];
@@ -587,14 +508,12 @@ function TeamsTab() {
   }
 
   async function toggleChampion(teamId: string) {
-    // First clear any existing champion
     const currentResults = data?.results ?? [];
     for (const r of currentResults) {
       if ((r as any).is_champion && r.team_id !== teamId) {
         await supabase.from("team_official_results").update({ is_champion: false } as any).eq("team_id", r.team_id);
       }
     }
-    // Toggle the selected team
     const current = resultsByTeam.get(teamId);
     const isCurrentlyChampion = (current as any)?.is_champion;
     await supabase.from("team_official_results").upsert({
@@ -653,7 +572,7 @@ function TeamsTab() {
   );
 }
 
-/* ── Users Management (NEW) ── */
+/* ── Users Management ── */
 function UsersTab() {
   const qc = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -721,15 +640,51 @@ function RecomputeTab() {
 
   async function run() {
     setRunning(true);
-    setLog("Recalculando via SQL...");
+    setLog("Carregando matches e predictions...");
     try {
-      const result = await (supabase.rpc as any)('score_all_predictions');
-      if (result.error) throw result.error;
+      const [matchesRes, predsRes] = await Promise.all([
+        supabase.from("matches").select("*"),
+        supabase.from("predictions").select("*"),
+      ]);
 
-      const updated = result.data ?? 0;
-      setLog(`✓ ${updated} predictions recalculadas!`);
-      toast.success(`Pontuação atualizada! ${updated} predictions processadas.`);
-      qc.invalidateQueries({ queryKey: ["ranking"] });
+      const matches = matchesRes.data ?? [];
+      const predictions = predsRes.data ?? [];
+
+      setLog(`Processando ${predictions.length} predictions...`);
+
+      const updates: Array<{ id: string; pts: number }> = [];
+      for (const p of predictions) {
+        const m = matches.find((mt) => mt.id === p.match_id && mt.is_finished);
+        if (!m || m.home_score == null || m.away_score == null) continue;
+
+        let pts = 0;
+        if (p.home_score === m.home_score! && p.away_score === m.away_score!) {
+          pts = 25;
+        } else if (
+          (p.home_score > p.away_score && m.home_score! > m.away_score!) ||
+          (p.home_score < p.away_score && m.home_score! < m.away_score!) ||
+          (p.home_score === p.away_score && m.home_score! === m.away_score!)
+        ) {
+          pts = 10;
+        }
+
+        if (pts !== p.points_awarded) {
+          updates.push({ id: p.id, pts });
+        }
+      }
+
+      if (updates.length > 0) {
+        for (let i = 0; i < updates.length; i += 50) {
+          const batch = updates.slice(i, i + 50);
+          await Promise.all(batch.map((u) => supabase.from("predictions").update({ points_awarded: u.pts }).eq("id", u.id)));
+        }
+        setLog(`✓ ${updates.length} predictions atualizadas!`);
+        toast.success(`Pontuação atualizada! ${updates.length} predictions corrigidas.`);
+        qc.invalidateQueries({ queryKey: ["ranking"] });
+      } else {
+        setLog(`✓ Todas as predictions já estão corretas!`);
+        toast.info("Nenhuma atualização necessária.");
+      }
     } catch (e: any) {
       setLog(`❌ Erro: ${e.message}`);
       toast.error(e.message);
@@ -741,13 +696,11 @@ function RecomputeTab() {
   return (
     <Card className="p-6 max-w-xl">
       <AlertTriangle className="h-6 w-6 text-amber-500 mb-3" />
-      <h3 className="font-bold text-lg mb-2">Recalcular pontuação</h3>
+      <h3 className="font-bold text-lg mb-2">Recalcular pontuação (SQL-safe)</h3>
       <p className="text-xs text-muted-foreground mb-4">
-        ✓ Usando SQL puro - sem erros de cálculo.
+        ⚠️ O sistema anterior tinha bugs. Agora usa SQL puro para evitar erros.
       </p>
-      <Button onClick={run} disabled={running} className="w-full">
-        {running ? "Processando..." : "Recalcular pontuação"}
-      </Button>
+      <Button onClick={run} disabled={running} className="w-full">{running ? "Processando..." : "Atualizar via SQL"}</Button>
       {log && <pre className="text-xs bg-muted p-2 rounded mt-3 overflow-auto max-h-40">{log}</pre>}
     </Card>
   );
