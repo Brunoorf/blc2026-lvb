@@ -492,7 +492,7 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
     // R32-1 e R32-2 → R16-1 (home/away)
     // R32-3 e R32-4 → R16-2, etc
 
-    const r16Updates: Array<{ id: string; teamId: string; isHome: boolean }> = [];
+    const r16Updates: Array<{ matchNumber: number; teamId: string; isHome: boolean }> = [];
 
     r32Matches
       .filter((m: any) => m.phase === "r32")
