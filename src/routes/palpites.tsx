@@ -472,8 +472,75 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
     if (payload.length === 0) return toast.info("Preencha algum palpite.");
     const { error } = await supabase.from("predictions").upsert(payload as any[], { onConflict: "user_id,match_id" });
     if (error) return toast.error(error.message);
+
+    // Se salvou R32, popular R16 com base nos palpites do user
+    const isR32 = playable.some((m: any) => m.phase === "r32");
+    if (isR32) {
+      try {
+        await populateR16FromR32Predictions(playable, scores);
+      } catch (e: any) {
+        console.warn("Aviso: R16 não foi preenchido automaticamente", e);
+      }
+    }
+
     toast.success("Palpites do mata-mata salvos!");
     onSaved();
+  }
+
+  async function populateR16FromR32Predictions(r32Matches: any[], scoresData: any) {
+    // Mapear R32 palpites → R16 vazio
+    // R32-1 e R32-2 → R16-1 (home/away)
+    // R32-3 e R32-4 → R16-2, etc
+
+    const r16Updates: Array<{ id: string; teamId: string; isHome: boolean }> = [];
+
+    r32Matches
+      .filter((m: any) => m.phase === "r32")
+      .forEach((m: any) => {
+        const s = scoresData[m.id];
+        if (!s || s.h === "" || s.a === "") return;
+
+        const h = parseInt(s.h);
+        const a = parseInt(s.a);
+        if (Number.isNaN(h) || Number.isNaN(a)) return;
+
+        // Determinar quem avança
+        let advancingTeamId = null;
+        if (h === a && s.adv) {
+          advancingTeamId = s.adv;
+        } else if (h > a) {
+          advancingTeamId = m.home_team_id;
+        } else if (a > h) {
+          advancingTeamId = m.away_team_id;
+        }
+
+        if (!advancingTeamId) return;
+
+        // Calcular qual jogo de R16 este R32 alimenta
+        const r32Num = m.match_number;
+        const r16Num = 17 + Math.floor((r32Num - 1) / 2);
+        const isHome = (r32Num - 1) % 2 === 0;
+
+        r16Updates.push({ matchNumber: r16Num, teamId: advancingTeamId, isHome });
+      });
+
+    // Atualizar R16 com times previstos
+    for (const update of r16Updates) {
+      const { data: r16Match } = await supabase
+        .from("matches")
+        .select("id")
+        .eq("match_number", update.matchNumber)
+        .eq("phase", "r16")
+        .single();
+
+      if (!r16Match) continue;
+
+      const field = update.isHome ? "home_team_id" : "away_team_id";
+      await supabase
+        .from("matches")
+        .update({ [field]: update.teamId } as any)
+        .eq("id", r16Match.id);
+    }
   }
 
   const byPhase: Record<string, any[]> = {};
