@@ -209,7 +209,7 @@ function ResultsTab() {
       return toast.error("Se o jogo do mata-mata terminou empatado, selecione quem avança!");
     }
 
-    const update: any = { 
+    const update: any = {
       is_finished: s.finished,
       advancing_team_id: (isKO && h === a) ? (s.adv || null) : null
     };
@@ -217,6 +217,15 @@ function ResultsTab() {
     else { update.home_score = null; update.away_score = null; }
     const { error } = await supabase.from("matches").update(update).eq("id", id);
     if (error) return toast.error(error.message);
+
+    // Se R32 foi finalizado, popula R16 automaticamente
+    if (s.finished && mt?.phase === "r32") {
+      try {
+        await populateNextPhase(mt, s.adv || (h > a ? mt.home_team_id : mt.away_team_id));
+      } catch (e: any) {
+        console.warn("Aviso: não foi possível popular R16", e);
+      }
+    }
     toast.success("Resultado salvo!");
     qc.invalidateQueries({ queryKey: ["admin-matches"] });
   }
@@ -269,6 +278,30 @@ function ResultsTab() {
       </div>
     </Card>
   );
+
+  async function populateNextPhase(r32Match: any, advancingTeamId: string) {
+    // Mapear R32 -> R16: jogos 1-2 -> R16 1 home/away, 3-4 -> R16 2, etc
+    const r32Num = r32Match.match_number;
+    const r16Num = 17 + Math.floor((r32Num - 1) / 2);
+    const isHome = (r32Num - 1) % 2 === 0;
+
+    const { data: r16Match } = await supabase
+      .from("matches")
+      .select("id")
+      .eq("match_number", r16Num)
+      .eq("phase", "r16")
+      .single();
+
+    if (!r16Match) return;
+
+    const updateField = isHome ? "home_team_id" : "away_team_id";
+    const { error } = await supabase
+      .from("matches")
+      .update({ [updateField]: advancingTeamId })
+      .eq("id", r16Match.id);
+
+    if (!error) qc.invalidateQueries({ queryKey: ["admin-matches"] });
+  }
 }
 
 /* ── Knockout Builder (NEW) ── */
@@ -382,10 +415,57 @@ function KnockoutBuilderTab() {
        if (toInsert.length === 0) return;
     }
 
-    const { error } = await supabase.from("matches").insert(toInsert);
-    if (error) return toast.error(error.message);
-    toast.success(`${toInsert.length} jogos de 16-avos gerados com sucesso!`);
+    const { error: r32Error } = await supabase.from("matches").insert(toInsert);
+    if (r32Error) return toast.error(r32Error.message);
+
+    // Após gerar R32, criar cascata de fases
+    try {
+      await createKnockoutCascade(nextMatchNum + 16);
+    } catch (e: any) {
+      toast.error(`R32 criado mas cascata falhou: ${e.message}`);
+    }
+
+    toast.success(`${toInsert.length} jogos de 16-avos gerados com sucesso! (cascata criada)`);
     qc.invalidateQueries({ queryKey: ["ko-builder"] });
+  }
+
+  async function createKnockoutCascade(startMatchNum: number) {
+    const r16Matches = [
+      { phase: "r16", round_label: "Oitavas 1", match_number: startMatchNum },
+      { phase: "r16", round_label: "Oitavas 2", match_number: startMatchNum + 1 },
+      { phase: "r16", round_label: "Oitavas 3", match_number: startMatchNum + 2 },
+      { phase: "r16", round_label: "Oitavas 4", match_number: startMatchNum + 3 },
+      { phase: "r16", round_label: "Oitavas 5", match_number: startMatchNum + 4 },
+      { phase: "r16", round_label: "Oitavas 6", match_number: startMatchNum + 5 },
+      { phase: "r16", round_label: "Oitavas 7", match_number: startMatchNum + 6 },
+      { phase: "r16", round_label: "Oitavas 8", match_number: startMatchNum + 7 },
+    ];
+
+    const qfMatches = [
+      { phase: "qf", round_label: "Quartas 1", match_number: startMatchNum + 8 },
+      { phase: "qf", round_label: "Quartas 2", match_number: startMatchNum + 9 },
+      { phase: "qf", round_label: "Quartas 3", match_number: startMatchNum + 10 },
+      { phase: "qf", round_label: "Quartas 4", match_number: startMatchNum + 11 },
+    ];
+
+    const sfMatches = [
+      { phase: "sf", round_label: "Semifinal 1", match_number: startMatchNum + 12 },
+      { phase: "sf", round_label: "Semifinal 2", match_number: startMatchNum + 13 },
+    ];
+
+    const finalMatches = [
+      { phase: "final", round_label: "Final", match_number: startMatchNum + 14 },
+    ];
+
+    const allMatches = [
+      ...r16Matches,
+      ...qfMatches,
+      ...sfMatches,
+      ...finalMatches,
+    ];
+
+    const { error } = await supabase.from("matches").insert(allMatches);
+    if (error) throw error;
   }
 
   const phases: MatchPhase[] = ["r32", "r16", "qf", "sf", "final"];
