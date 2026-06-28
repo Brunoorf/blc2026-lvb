@@ -219,7 +219,6 @@ function ResultsTab() {
     if (error) return toast.error(error.message);
 
     toast.success("Resultado salvo!");
-    // Points are applied automatically by the DB trigger (trg_auto_score_on_finish).
     qc.invalidateQueries({ queryKey: ["admin-matches"] });
   }
 
@@ -273,7 +272,7 @@ function ResultsTab() {
   );
 }
 
-/* ── Knockout Builder (NEW) ── */
+/* ── Knockout Builder ── */
 function KnockoutBuilderTab() {
   const qc = useQueryClient();
   const { data } = useQuery({
@@ -405,8 +404,7 @@ function KnockoutBuilderTab() {
 
     for (const slot of slots) {
       const already = (existing[slot.phase] ?? []).length;
-      const needed = slot.count - already;
-      if (needed <= 0) continue;
+      if (already >= slot.count) continue;
       for (let i = already; i < slot.count; i++) {
         toCreate.push({ phase: slot.phase, round_label: slot.label(i), match_number: num++, home_team_id: null, away_team_id: null });
       }
