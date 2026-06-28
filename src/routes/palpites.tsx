@@ -275,14 +275,17 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
     });
   }, [preds]);
 
-  // Bracket consecutivo: slot N e slot N+1 se enfrentam nas oitavas, etc.
-  // Esquerda: slots 1-8 (indices 0-7) | Direita: slots 9-16 (indices 8-15)
   const BRACKET_FEED: Partial<Record<MatchPhase, [number, number][]>> = {
     r16:   [[0,1],[2,3],[4,5],[6,7],[8,9],[10,11],[12,13],[14,15]],
     qf:    [[0,1],[2,3],[4,5],[6,7]],
     sf:    [[0,1],[2,3]],
+    third: [[0,1]],
     final: [[0,1]],
   };
+
+  // third place and final both source from sf; third uses losers, final uses winners
+  const BRACKET_SOURCE: Partial<Record<MatchPhase, MatchPhase>> = { third: "sf", final: "sf" };
+  const BRACKET_USE_LOSER = new Set<MatchPhase>(["third"]);
 
   const cascadeTeams = useMemo(() => {
     const result: Record<string, { home: string | null; away: string | null; fromCascade: boolean }> = {};
@@ -297,18 +300,32 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
       if (a > h) return t.away;
       return s.adv || null;
     }
+    function predictedLoser(matchId: string): string | null {
+      const s = scores[matchId];
+      if (!s || s.h === "" || s.a === "") return null;
+      const h = parseInt(s.h); const a = parseInt(s.a);
+      if (Number.isNaN(h) || Number.isNaN(a)) return null;
+      const t = result[matchId];
+      if (!t) return null;
+      if (h > a) return t.away;
+      if (a > h) return t.home;
+      if (s.adv) return s.adv === t.home ? t.away : t.home;
+      return null;
+    }
     for (let pi = 0; pi < KO_PHASES.length; pi++) {
       const phase = KO_PHASES[pi];
-      const prevPhase = pi > 0 ? KO_PHASES[pi - 1] : null;
+      const srcPhase = BRACKET_SOURCE[phase] ?? (pi > 0 ? KO_PHASES[pi - 1] : null);
+      const useLoser = BRACKET_USE_LOSER.has(phase);
       const phaseMatches = byPhase[phase] ?? [];
-      const prevMatches = prevPhase ? (byPhase[prevPhase] ?? []) : [];
+      const prevMatches = srcPhase ? (byPhase[srcPhase] ?? []) : [];
       for (let i = 0; i < phaseMatches.length; i++) {
         const m = phaseMatches[i];
         if (m.home_team_id && m.away_team_id) { result[m.id] = { home: m.home_team_id, away: m.away_team_id, fromCascade: false }; continue; }
         const feed = BRACKET_FEED[phase as MatchPhase];
         const [homeIdx, awayIdx] = feed?.[i] ?? [i * 2, i * 2 + 1];
         const prevHome = prevMatches[homeIdx]; const prevAway = prevMatches[awayIdx];
-        result[m.id] = { home: m.home_team_id || (prevHome ? predictedWinner(prevHome.id) : null), away: m.away_team_id || (prevAway ? predictedWinner(prevAway.id) : null), fromCascade: true };
+        const getTeam = useLoser ? predictedLoser : predictedWinner;
+        result[m.id] = { home: m.home_team_id || (prevHome ? getTeam(prevHome.id) : null), away: m.away_team_id || (prevAway ? getTeam(prevAway.id) : null), fromCascade: true };
       }
     }
     return result;
