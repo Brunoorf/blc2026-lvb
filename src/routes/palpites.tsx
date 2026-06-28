@@ -380,15 +380,27 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
                 return (
                   <div key={mt.id} className="flex flex-col gap-2 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                     {cascade?.fromCascade && (home || away) && <p className="text-[10px] text-accent/70 font-medium">↳ times do seu chaveamento</p>}
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2 min-w-0">
-                        {home ? (<><span className={`font-medium text-xs sm:text-sm truncate ${cascade?.fromCascade ? "text-accent" : ""}`}>{home.name}</span><TeamFlag code={home.code} fallback={home.flag} size={20} /></>) : (<span className="text-xs text-muted-foreground italic">A definir</span>)}
+                    {/* Mobile: stacked layout */}
+                    <div className="flex flex-col gap-1.5 sm:hidden">
+                      <div className="flex items-center gap-2">
+                        {home ? (<><TeamFlag code={home.code} fallback={home.flag} size={18} className="shrink-0" /><span className={`flex-1 font-medium text-sm truncate ${cascade?.fromCascade ? "text-accent" : ""}`}>{home.name}</span></>) : (<span className="flex-1 text-xs text-muted-foreground italic">A definir</span>)}
+                        <ScoreInput disabled={locked || !teamsReady} value={s.h} onChange={(v) => setScores((prev) => ({ ...prev, [mt.id]: { ...prev[mt.id], h: v } }))} />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {away ? (<><TeamFlag code={away.code} fallback={away.flag} size={18} className="shrink-0" /><span className={`flex-1 font-medium text-sm truncate ${cascade?.fromCascade ? "text-accent" : ""}`}>{away.name}</span></>) : (<span className="flex-1 text-xs text-muted-foreground italic">A definir</span>)}
+                        <ScoreInput disabled={locked || !teamsReady} value={s.a} onChange={(v) => setScores((prev) => ({ ...prev, [mt.id]: { ...prev[mt.id], a: v } }))} />
+                      </div>
+                    </div>
+                    {/* Desktop: horizontal layout */}
+                    <div className="hidden sm:flex items-center gap-3">
+                      <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                        {home ? (<><span className={`font-medium text-sm truncate ${cascade?.fromCascade ? "text-accent" : ""}`}>{home.name}</span><TeamFlag code={home.code} fallback={home.flag} size={20} /></>) : (<span className="text-xs text-muted-foreground italic">A definir</span>)}
                       </div>
                       <ScoreInput disabled={locked || !teamsReady} value={s.h} onChange={(v) => setScores((prev) => ({ ...prev, [mt.id]: { ...prev[mt.id], h: v } }))} />
                       <span className="text-muted-foreground text-xs">×</span>
                       <ScoreInput disabled={locked || !teamsReady} value={s.a} onChange={(v) => setScores((prev) => ({ ...prev, [mt.id]: { ...prev[mt.id], a: v } }))} />
-                      <div className="flex-1 flex items-center gap-1.5 sm:gap-2 min-w-0">
-                        {away ? (<><TeamFlag code={away.code} fallback={away.flag} size={20} /><span className={`font-medium text-xs sm:text-sm truncate ${cascade?.fromCascade ? "text-accent" : ""}`}>{away.name}</span></>) : (<span className="text-xs text-muted-foreground italic">A definir</span>)}
+                      <div className="flex-1 flex items-center gap-2 min-w-0">
+                        {away ? (<><TeamFlag code={away.code} fallback={away.flag} size={20} /><span className={`font-medium text-sm truncate ${cascade?.fromCascade ? "text-accent" : ""}`}>{away.name}</span></>) : (<span className="text-xs text-muted-foreground italic">A definir</span>)}
                       </div>
                     </div>
                     {isDraw && teamsReady && (
