@@ -3,7 +3,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type MatchPhase = Database["public"]["Enums"]["match_phase"];
 
-export const PHASE_ORDER: MatchPhase[] = ["group", "r32", "r16", "qf", "sf", "final"];
+export const PHASE_ORDER: MatchPhase[] = ["group", "r32", "r16", "qf", "sf", "third", "final"];
 
 export const PHASE_LABEL: Record<MatchPhase, string> = {
   group: "Fase de Grupos",
@@ -11,6 +11,7 @@ export const PHASE_LABEL: Record<MatchPhase, string> = {
   r16: "Oitavas",
   qf: "Quartas",
   sf: "Semifinais",
+  third: "3º Lugar",
   final: "Final",
 };
 
