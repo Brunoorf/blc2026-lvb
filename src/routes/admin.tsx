@@ -122,7 +122,12 @@ function TournamentTab() {
       </div>
       <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40">
         <div><p className="font-medium">Travar palpites do mata-mata</p><p className="text-xs text-muted-foreground">Usuários não poderão mais editar.</p></div>
-        <Switch checked={koLocked} onCheckedChange={setKoLocked} />
+        <Switch checked={koLocked} onCheckedChange={async (v) => {
+          setKoLocked(v);
+          const { error } = await supabase.from("tournament_settings").update({ knockout_picks_locked: v } as any).eq("id", 1);
+          if (error) { toast.error(error.message); setKoLocked(!v); }
+          else { toast.success(v ? "Palpites do mata-mata bloqueados!" : "Palpites do mata-mata liberados!"); qc.invalidateQueries({ queryKey: ["settings"] }); }
+        }} />
       </div>
       <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40">
         <div><p className="font-medium">Travar palpites especiais</p><p className="text-xs text-muted-foreground">Usuários não poderão editar campeão e zebra.</p></div>
@@ -219,6 +224,7 @@ function ResultsTab() {
     if (error) return toast.error(error.message);
 
     toast.success("Resultado salvo!");
+    // Points are applied automatically by the DB trigger (trg_auto_score_on_finish).
     qc.invalidateQueries({ queryKey: ["admin-matches"] });
   }
 
@@ -272,7 +278,7 @@ function ResultsTab() {
   );
 }
 
-/* ── Knockout Builder ── */
+/* ── Knockout Builder (NEW) ── */
 function KnockoutBuilderTab() {
   const qc = useQueryClient();
   const { data } = useQuery({
@@ -404,7 +410,8 @@ function KnockoutBuilderTab() {
 
     for (const slot of slots) {
       const already = (existing[slot.phase] ?? []).length;
-      if (already >= slot.count) continue;
+      const needed = slot.count - already;
+      if (needed <= 0) continue;
       for (let i = already; i < slot.count; i++) {
         toCreate.push({ phase: slot.phase, round_label: slot.label(i), match_number: num++, home_team_id: null, away_team_id: null });
       }
@@ -485,15 +492,19 @@ function KnockoutBuilderTab() {
               <Badge variant="secondary">{ms.length} jogos</Badge>
             </h3>
             <div className="space-y-2">
-              {ms.map((mt: any) => {
+              {ms.map((mt: any, idx: number) => {
                 const home = teamsById.get(mt.home_team_id);
                 const away = teamsById.get(mt.away_team_id);
+                const prevLabel: Record<string, string> = { r16: "16-avos", qf: "Oitavas", sf: "Quartas", final: "Semi" };
+                const prev = prevLabel[phase];
+                const homeName = home?.name ?? (prev ? `Venc. ${prev} ${idx * 2 + 1}` : "—");
+                const awayName = away?.name ?? (prev ? `Venc. ${prev} ${idx * 2 + 2}` : "—");
                 return (
                   <div key={mt.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/40">
                     <span className="text-xs text-muted-foreground w-20 shrink-0">{mt.round_label}</span>
-                    <span className="flex-1 text-sm text-right flex items-center justify-end gap-1"><TeamFlag code={home?.code} fallback={home?.flag} size={16} /> {home?.name ?? "—"}</span>
+                    <span className="flex-1 text-sm text-right flex items-center justify-end gap-1"><TeamFlag code={home?.code} fallback={home?.flag} size={16} /> {homeName}</span>
                     <span className="text-xs text-muted-foreground">vs</span>
-                    <span className="flex-1 text-sm flex items-center gap-1"><TeamFlag code={away?.code} fallback={away?.flag} size={16} /> {away?.name ?? "—"}</span>
+                    <span className="flex-1 text-sm flex items-center gap-1"><TeamFlag code={away?.code} fallback={away?.flag} size={16} /> {awayName}</span>
                     {mt.is_finished && <Badge variant="outline" className="text-xs">Finalizado</Badge>}
                     <Button size="sm" variant="ghost" onClick={() => deleteMatch(mt.id)} title="Remover">
                       <Trash2 className="h-4 w-4 text-destructive" />
