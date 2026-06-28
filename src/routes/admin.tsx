@@ -18,7 +18,7 @@ import { recomputeAllPoints } from "@/lib/recompute";
 import { PHASE_LABEL, type MatchPhase } from "@/lib/scoring";
 import { computeGroupStandings } from "@/lib/group-table";
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/admin")({ 
   component: () => <AuthGate><AdminGate /></AuthGate>,
 });
 
@@ -358,22 +358,22 @@ function KnockoutBuilderTab() {
     }
 
     const PAIRINGS = [
-      { h: ["1","E"], a: ["3","0"], lbl: "16-avos 1" },
-      { h: ["1","I"], a: ["2","J"], lbl: "16-avos 2" },
-      { h: ["2","A"], a: ["2","B"], lbl: "16-avos 3" },
-      { h: ["1","F"], a: ["2","C"], lbl: "16-avos 4" },
-      { h: ["2","K"], a: ["2","L"], lbl: "16-avos 5" },
-      { h: ["1","H"], a: ["3","1"], lbl: "16-avos 6" },
-      { h: ["1","D"], a: ["3","2"], lbl: "16-avos 7" },
-      { h: ["1","G"], a: ["3","3"], lbl: "16-avos 8" },
-      { h: ["1","C"], a: ["3","4"], lbl: "16-avos 9" },
-      { h: ["2","E"], a: ["2","I"], lbl: "16-avos 10" },
-      { h: ["1","A"], a: ["3","5"], lbl: "16-avos 11" },
-      { h: ["1","B"], a: ["3","6"], lbl: "16-avos 12" },
-      { h: ["1","J"], a: ["2","H"], lbl: "16-avos 13" },
-      { h: ["2","D"], a: ["2","G"], lbl: "16-avos 14" },
-      { h: ["1","L"], a: ["3","7"], lbl: "16-avos 15" },
-      { h: ["1","K"], a: ["2","F"], lbl: "16-avos 16" },
+      { h: ["2","A"], a: ["1","B"], lbl: "16-avos 1" },   // P73: África do Sul vs Canadá
+      { h: ["1","E"], a: ["2","D"], lbl: "16-avos 2" },   // P74: Alemanha vs Paraguai
+      { h: ["1","F"], a: ["2","C"], lbl: "16-avos 3" },   // P75: Holanda vs Marrocos
+      { h: ["1","C"], a: ["2","F"], lbl: "16-avos 4" },   // P76: Brasil vs Japão
+      { h: ["1","I"], a: ["3","0"], lbl: "16-avos 5" },   // P77: França vs melhor 3º
+      { h: ["2","E"], a: ["2","I"], lbl: "16-avos 6" },   // P78: Costa do Marfim vs Noruega
+      { h: ["1","A"], a: ["3","1"], lbl: "16-avos 7" },   // P79: México vs 2º melhor 3º
+      { h: ["1","L"], a: ["3","2"], lbl: "16-avos 8" },   // P80: Inglaterra vs 3º E/H/I/J/K
+      { h: ["1","D"], a: ["3","3"], lbl: "16-avos 9" },   // P81: EUA vs Bósnia (4º melhor 3º)
+      { h: ["1","G"], a: ["3","4"], lbl: "16-avos 10" },  // P82: Bélgica vs 3º A/E/H/I/J
+      { h: ["2","K"], a: ["2","L"], lbl: "16-avos 11" },  // P83: 2ºK vs Croácia
+      { h: ["1","H"], a: ["2","J"], lbl: "16-avos 12" },  // P84: Espanha vs 2ºJ
+      { h: ["2","B"], a: ["3","5"], lbl: "16-avos 13" },  // P85: Suíça vs 3º E/F/G/I/J
+      { h: ["1","J"], a: ["2","H"], lbl: "16-avos 14" },  // P86: Argentina vs Cabo Verde
+      { h: ["1","K"], a: ["3","6"], lbl: "16-avos 15" },  // P87: 1ºK vs Gana
+      { h: ["3","7"], a: ["2","G"], lbl: "16-avos 16" },  // P88: Austrália vs Egito
     ];
 
     const toInsert = PAIRINGS.map((p, i) => ({
