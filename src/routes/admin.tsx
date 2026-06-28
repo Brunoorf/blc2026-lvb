@@ -405,6 +405,7 @@ function KnockoutBuilderTab() {
       { phase: "r16", count: 8, label: (i) => `Oitavas ${i + 1}` },
       { phase: "qf",  count: 4, label: (i) => `Quartas ${i + 1}` },
       { phase: "sf",  count: 2, label: (i) => `Semi ${i + 1}` },
+      { phase: "third", count: 1, label: () => "3º Lugar" },
       { phase: "final", count: 1, label: () => "Final" },
     ];
 
@@ -426,7 +427,7 @@ function KnockoutBuilderTab() {
     qc.invalidateQueries({ queryKey: ["ko-builder"] });
   }
 
-  const phases: MatchPhase[] = ["r32", "r16", "qf", "sf", "final"];
+  const phases: MatchPhase[] = ["r32", "r16", "qf", "sf", "third", "final"];
   const byPhase: Record<string, any[]> = {};
   koMatches.forEach((m) => { (byPhase[m.phase] ??= []).push(m); });
 
@@ -591,6 +592,7 @@ function TeamsTab() {
                   <SelectItem value="r16">Oitavas</SelectItem>
                   <SelectItem value="qf">Quartas</SelectItem>
                   <SelectItem value="sf">Semis</SelectItem>
+                  <SelectItem value="third">3º Lugar</SelectItem>
                   <SelectItem value="final">Final</SelectItem>
                 </SelectContent>
               </Select>
