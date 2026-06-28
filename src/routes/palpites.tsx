@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { computeGroupStandings } from "@/lib/group-table";
 import { PHASE_LABEL, type MatchPhase } from "@/lib/scoring";
 
-export const Route = createFileRoute("/palpites")({ 
+export const Route = createFileRoute("/palpites")({
   component: () => <AuthGate><PalpitesPage /></AuthGate>,
 });
 
@@ -275,9 +275,11 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
     });
   }, [preds]);
 
+  // Bracket consecutivo: slot N e slot N+1 se enfrentam nas oitavas, etc.
+  // Esquerda: slots 1-8 (indices 0-7) | Direita: slots 9-16 (indices 8-15)
   const BRACKET_FEED: Partial<Record<MatchPhase, [number, number][]>> = {
-    r16:   [[1,4],[0,2],[3,5],[6,7],[10,11],[8,9],[13,15],[12,14]],
-    qf:    [[0,1],[4,5],[2,3],[6,7]],
+    r16:   [[0,1],[2,3],[4,5],[6,7],[8,9],[10,11],[12,13],[14,15]],
+    qf:    [[0,1],[2,3],[4,5],[6,7]],
     sf:    [[0,1],[2,3]],
     final: [[0,1]],
   };

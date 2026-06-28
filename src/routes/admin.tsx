@@ -224,7 +224,6 @@ function ResultsTab() {
     if (error) return toast.error(error.message);
 
     toast.success("Resultado salvo!");
-    // Points are applied automatically by the DB trigger (trg_auto_score_on_finish).
     qc.invalidateQueries({ queryKey: ["admin-matches"] });
   }
 
@@ -357,23 +356,26 @@ function KnockoutBuilderTab() {
       return standings[gidOrIndex]?.[parseInt(pos)-1]?.team_id ?? null;
     }
 
+    // Ordem oficial do chaveamento Copa 2026
+    // Esquerda: slots 1-8  |  Direita: slots 9-16
+    // Cascata: 1vs2 → oitavas, 3vs4 → oitavas, etc. (consecutivo)
     const PAIRINGS = [
-      { h: ["2","A"], a: ["1","B"], lbl: "16-avos 1" },   // P73: África do Sul vs Canadá
-      { h: ["1","E"], a: ["2","D"], lbl: "16-avos 2" },   // P74: Alemanha vs Paraguai
-      { h: ["1","F"], a: ["2","C"], lbl: "16-avos 3" },   // P75: Holanda vs Marrocos
-      { h: ["1","C"], a: ["2","F"], lbl: "16-avos 4" },   // P76: Brasil vs Japão
-      { h: ["1","I"], a: ["3","0"], lbl: "16-avos 5" },   // P77: França vs melhor 3º
-      { h: ["2","E"], a: ["2","I"], lbl: "16-avos 6" },   // P78: Costa do Marfim vs Noruega
-      { h: ["1","A"], a: ["3","1"], lbl: "16-avos 7" },   // P79: México vs 2º melhor 3º
-      { h: ["1","L"], a: ["3","2"], lbl: "16-avos 8" },   // P80: Inglaterra vs 3º E/H/I/J/K
-      { h: ["1","D"], a: ["3","3"], lbl: "16-avos 9" },   // P81: EUA vs Bósnia (4º melhor 3º)
-      { h: ["1","G"], a: ["3","4"], lbl: "16-avos 10" },  // P82: Bélgica vs 3º A/E/H/I/J
-      { h: ["1","K"], a: ["2","L"], lbl: "16-avos 11" },  // P83: Portugal vs Croácia
-      { h: ["1","H"], a: ["2","J"], lbl: "16-avos 12" },  // P84: Espanha vs 2ºJ
-      { h: ["2","B"], a: ["3","5"], lbl: "16-avos 13" },  // P85: Suíça vs 3º E/F/G/I/J
-      { h: ["1","J"], a: ["2","H"], lbl: "16-avos 14" },  // P86: Argentina vs Cabo Verde
-      { h: ["2","K"], a: ["3","6"], lbl: "16-avos 15" },  // P87: Colômbia vs Gana
-      { h: ["3","7"], a: ["2","G"], lbl: "16-avos 16" },  // P88: Austrália vs Egito
+      { h: ["1","E"], a: ["2","D"], lbl: "16-avos 1" },   // Alemanha vs Paraguai
+      { h: ["1","I"], a: ["3","0"], lbl: "16-avos 2" },   // França vs melhor 3º
+      { h: ["2","A"], a: ["1","B"], lbl: "16-avos 3" },   // África do Sul vs Canadá
+      { h: ["1","F"], a: ["2","C"], lbl: "16-avos 4" },   // Holanda vs Marrocos
+      { h: ["1","K"], a: ["2","L"], lbl: "16-avos 5" },   // Portugal vs Croácia
+      { h: ["1","H"], a: ["2","J"], lbl: "16-avos 6" },   // Espanha vs Áustria
+      { h: ["1","D"], a: ["3","3"], lbl: "16-avos 7" },   // EUA vs 4º melhor 3º
+      { h: ["1","G"], a: ["3","4"], lbl: "16-avos 8" },   // Bélgica vs 5º melhor 3º
+      { h: ["1","C"], a: ["2","F"], lbl: "16-avos 9" },   // Brasil vs Japão
+      { h: ["2","I"], a: ["2","E"], lbl: "16-avos 10" },  // Noruega vs Costa do Marfim
+      { h: ["1","A"], a: ["3","1"], lbl: "16-avos 11" },  // México vs 2º melhor 3º
+      { h: ["1","L"], a: ["3","2"], lbl: "16-avos 12" },  // Inglaterra vs 3º melhor 3º
+      { h: ["1","J"], a: ["2","H"], lbl: "16-avos 13" },  // Argentina vs Cabo Verde
+      { h: ["3","7"], a: ["2","G"], lbl: "16-avos 14" },  // 8º melhor 3º vs Egito
+      { h: ["2","B"], a: ["3","5"], lbl: "16-avos 15" },  // Suíça vs 6º melhor 3º
+      { h: ["2","K"], a: ["3","6"], lbl: "16-avos 16" },  // Colômbia vs 7º melhor 3º
     ];
 
     const toInsert = PAIRINGS.map((p, i) => ({
