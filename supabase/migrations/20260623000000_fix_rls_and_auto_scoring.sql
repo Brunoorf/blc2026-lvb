@@ -22,6 +22,7 @@ CREATE POLICY "Authenticated see all special"
 -- The user's actual prediction (home_score, away_score) is
 -- never modified. Called via supabase.rpc('score_all_predictions').
 -- =========================================================
+DROP FUNCTION IF EXISTS public.score_all_predictions();
 CREATE OR REPLACE FUNCTION public.score_all_predictions()
 RETURNS TABLE(updated_count BIGINT)
 LANGUAGE plpgsql

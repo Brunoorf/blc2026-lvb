@@ -390,6 +390,37 @@ function KnockoutBuilderTab() {
     qc.invalidateQueries({ queryKey: ["ko-builder"] });
   }
 
+  async function autoGeneratePlaceholders() {
+    const existing: Record<string, any[]> = {};
+    koMatches.forEach((m) => { (existing[m.phase] ??= []).push(m); });
+    const toCreate: { phase: MatchPhase; round_label: string; match_number: number; home_team_id: null; away_team_id: null }[] = [];
+    let num = nextMatchNum;
+
+    const slots: { phase: MatchPhase; count: number; label: (i: number) => string }[] = [
+      { phase: "r16", count: 8, label: (i) => `Oitavas ${i + 1}` },
+      { phase: "qf",  count: 4, label: (i) => `Quartas ${i + 1}` },
+      { phase: "sf",  count: 2, label: (i) => `Semi ${i + 1}` },
+      { phase: "final", count: 1, label: () => "Final" },
+    ];
+
+    for (const slot of slots) {
+      const already = (existing[slot.phase] ?? []).length;
+      const needed = slot.count - already;
+      if (needed <= 0) continue;
+      for (let i = already; i < slot.count; i++) {
+        toCreate.push({ phase: slot.phase, round_label: slot.label(i), match_number: num++, home_team_id: null, away_team_id: null });
+      }
+    }
+
+    if (toCreate.length === 0) return toast.info("Todos os placeholders já existem.");
+    if (!confirm(`Criar ${toCreate.length} partidas placeholder (R16/QF/SF/Final) com times a definir? Isso habilita a cascata nos palpites.`)) return;
+
+    const { error } = await supabase.from("matches").insert(toCreate as any[]);
+    if (error) return toast.error(error.message);
+    toast.success(`${toCreate.length} partidas placeholder criadas!`);
+    qc.invalidateQueries({ queryKey: ["ko-builder"] });
+  }
+
   const phases: MatchPhase[] = ["r32", "r16", "qf", "sf", "final"];
   const byPhase: Record<string, any[]> = {};
   koMatches.forEach((m) => { (byPhase[m.phase] ??= []).push(m); });
@@ -399,9 +430,12 @@ function KnockoutBuilderTab() {
       <Card className="p-5 border-primary/50 bg-primary/5">
         <h3 className="font-bold mb-2 flex items-center gap-2 text-primary">Simulação do Chaveamento Oficial</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Gere os 16 cruzamentos iniciais automaticamente com base na classificação dos 12 grupos.
+          Gere os 16 cruzamentos iniciais automaticamente com base na classificação dos 12 grupos. Depois, crie os placeholders para R16, QF, SF e Final — isso habilita a cascata nos palpites dos usuários.
         </p>
-        <Button onClick={autoGenerateR32} className="w-full sm:w-auto"><GitBranch className="h-4 w-4 mr-2" /> Gerar 16-Avos Automaticamente</Button>
+        <div className="flex flex-wrap gap-3">
+          <Button onClick={autoGenerateR32} className="w-full sm:w-auto"><GitBranch className="h-4 w-4 mr-2" /> Gerar 16-Avos Automaticamente</Button>
+          <Button onClick={autoGeneratePlaceholders} variant="secondary" className="w-full sm:w-auto"><GitBranch className="h-4 w-4 mr-2" /> Gerar Placeholders R16→Final</Button>
+        </div>
       </Card>
       
       <Card className="p-5">
