@@ -318,6 +318,12 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
 
   return (
     <div className="space-y-6">
+      {locked && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+          <Lock className="h-4 w-4 text-destructive shrink-0" />
+          <span className="text-sm text-destructive font-medium">Palpites do mata-mata travados pelo administrador.</span>
+        </div>
+      )}
       {KO_PHASES.map((phase) => {
         const phaseMatches = byPhase[phase] ?? [];
         if (phaseMatches.length === 0) return null;
