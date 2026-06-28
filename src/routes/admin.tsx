@@ -224,6 +224,7 @@ function ResultsTab() {
     if (error) return toast.error(error.message);
 
     toast.success("Resultado salvo!");
+    // Points are applied automatically by the DB trigger (trg_auto_score_on_finish).
     qc.invalidateQueries({ queryKey: ["admin-matches"] });
   }
 
@@ -356,9 +357,6 @@ function KnockoutBuilderTab() {
       return standings[gidOrIndex]?.[parseInt(pos)-1]?.team_id ?? null;
     }
 
-    // Ordem oficial do chaveamento Copa 2026
-    // Esquerda: slots 1-8  |  Direita: slots 9-16
-    // Cascata: 1vs2 → oitavas, 3vs4 → oitavas, etc. (consecutivo)
     const PAIRINGS = [
       { h: ["1","E"], a: ["2","D"], lbl: "16-avos 1" },   // Alemanha vs Paraguai
       { h: ["1","I"], a: ["3","0"], lbl: "16-avos 2" },   // França vs melhor 3º
@@ -407,6 +405,7 @@ function KnockoutBuilderTab() {
       { phase: "r16", count: 8, label: (i) => `Oitavas ${i + 1}` },
       { phase: "qf",  count: 4, label: (i) => `Quartas ${i + 1}` },
       { phase: "sf",  count: 2, label: (i) => `Semi ${i + 1}` },
+      { phase: "third", count: 1, label: () => "3º Lugar" },
       { phase: "final", count: 1, label: () => "Final" },
     ];
 
@@ -420,7 +419,7 @@ function KnockoutBuilderTab() {
     }
 
     if (toCreate.length === 0) return toast.info("Todos os placeholders já existem.");
-    if (!confirm(`Criar ${toCreate.length} partidas placeholder (R16/QF/SF/Final) com times a definir? Isso habilita a cascata nos palpites.`)) return;
+    if (!confirm(`Criar ${toCreate.length} partidas placeholder (R16/QF/SF/3ºLugar/Final) com times a definir? Isso habilita a cascata nos palpites.`)) return;
 
     const { error } = await supabase.from("matches").insert(toCreate as any[]);
     if (error) return toast.error(error.message);
@@ -428,7 +427,7 @@ function KnockoutBuilderTab() {
     qc.invalidateQueries({ queryKey: ["ko-builder"] });
   }
 
-  const phases: MatchPhase[] = ["r32", "r16", "qf", "sf", "final"];
+  const phases: MatchPhase[] = ["r32", "r16", "qf", "sf", "third", "final"];
   const byPhase: Record<string, any[]> = {};
   koMatches.forEach((m) => { (byPhase[m.phase] ??= []).push(m); });
 
@@ -437,7 +436,7 @@ function KnockoutBuilderTab() {
       <Card className="p-5 border-primary/50 bg-primary/5">
         <h3 className="font-bold mb-2 flex items-center gap-2 text-primary">Simulação do Chaveamento Oficial</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Gere os 16 cruzamentos iniciais automaticamente com base na classificação dos 12 grupos. Depois, crie os placeholders para R16, QF, SF e Final — isso habilita a cascata nos palpites dos usuários.
+          Gere os 16 cruzamentos iniciais automaticamente com base na classificação dos 12 grupos. Depois, crie os placeholders para R16, QF, SF, 3º Lugar e Final — isso habilita a cascata nos palpites dos usuários.
         </p>
         <div className="flex flex-wrap gap-3">
           <Button onClick={autoGenerateR32} className="w-full sm:w-auto"><GitBranch className="h-4 w-4 mr-2" /> Gerar 16-Avos Automaticamente</Button>
@@ -497,7 +496,7 @@ function KnockoutBuilderTab() {
               {ms.map((mt: any, idx: number) => {
                 const home = teamsById.get(mt.home_team_id);
                 const away = teamsById.get(mt.away_team_id);
-                const prevLabel: Record<string, string> = { r16: "16-avos", qf: "Oitavas", sf: "Quartas", final: "Semi" };
+                const prevLabel: Record<string, string> = { r16: "16-avos", qf: "Oitavas", sf: "Quartas", final: "Semi", third: "Semi" };
                 const prev = prevLabel[phase];
                 const homeName = home?.name ?? (prev ? `Venc. ${prev} ${idx * 2 + 1}` : "—");
                 const awayName = away?.name ?? (prev ? `Venc. ${prev} ${idx * 2 + 2}` : "—");
@@ -593,6 +592,7 @@ function TeamsTab() {
                   <SelectItem value="r16">Oitavas</SelectItem>
                   <SelectItem value="qf">Quartas</SelectItem>
                   <SelectItem value="sf">Semis</SelectItem>
+                  <SelectItem value="third">3º Lugar</SelectItem>
                   <SelectItem value="final">Final</SelectItem>
                 </SelectContent>
               </Select>
