@@ -264,6 +264,24 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
     return s;
   });
 
+  useEffect(() => {
+    setScores(() => {
+      const s: Record<string, { h: string; a: string; adv: string }> = {};
+      for (const mt of matches) {
+        const p = preds.find((x: any) => x.match_id === mt.id);
+        s[mt.id] = { h: p ? String(p.home_score) : "", a: p ? String(p.away_score) : "", adv: p?.advancing_team_id || "" };
+      }
+      return s;
+    });
+  }, [preds]);
+
+  const BRACKET_FEED: Partial<Record<MatchPhase, [number, number][]>> = {
+    r16:   [[1,4],[0,2],[3,5],[6,7],[10,11],[8,9],[13,15],[12,14]],
+    qf:    [[0,1],[4,5],[2,3],[6,7]],
+    sf:    [[0,1],[2,3]],
+    final: [[0,1]],
+  };
+
   const cascadeTeams = useMemo(() => {
     const result: Record<string, { home: string | null; away: string | null; fromCascade: boolean }> = {};
     function predictedWinner(matchId: string): string | null {
@@ -285,7 +303,9 @@ function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }
       for (let i = 0; i < phaseMatches.length; i++) {
         const m = phaseMatches[i];
         if (m.home_team_id && m.away_team_id) { result[m.id] = { home: m.home_team_id, away: m.away_team_id, fromCascade: false }; continue; }
-        const prevHome = prevMatches[i * 2]; const prevAway = prevMatches[i * 2 + 1];
+        const feed = BRACKET_FEED[phase as MatchPhase];
+        const [homeIdx, awayIdx] = feed?.[i] ?? [i * 2, i * 2 + 1];
+        const prevHome = prevMatches[homeIdx]; const prevAway = prevMatches[awayIdx];
         result[m.id] = { home: m.home_team_id || (prevHome ? predictedWinner(prevHome.id) : null), away: m.away_team_id || (prevAway ? predictedWinner(prevAway.id) : null), fromCascade: true };
       }
     }
