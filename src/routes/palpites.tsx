@@ -247,7 +247,7 @@ function GroupBlock({ group, teams, matches, preds, teamsById, locked, status, o
   );
 }
 
-const KO_PHASES: MatchPhase[] = ["r32", "r16", "qf", "sf", "final"];
+const KO_PHASES: MatchPhase[] = ["r32", "r16", "qf", "sf", "third", "final"];
 
 function KnockoutPanel({ matches, preds, teamsById, locked, phaseOpen, onSaved }: any) {
   const byPhase = useMemo(() => {
