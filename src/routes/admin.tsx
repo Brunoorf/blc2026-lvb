@@ -18,7 +18,7 @@ import { recomputeAllPoints } from "@/lib/recompute";
 import { PHASE_LABEL, type MatchPhase } from "@/lib/scoring";
 import { computeGroupStandings } from "@/lib/group-table";
 
-export const Route = createFileRoute("/admin")({ 
+export const Route = createFileRoute("/admin")({
   component: () => <AuthGate><AdminGate /></AuthGate>,
 });
 
@@ -368,11 +368,11 @@ function KnockoutBuilderTab() {
       { h: ["1","L"], a: ["3","2"], lbl: "16-avos 8" },   // P80: Inglaterra vs 3º E/H/I/J/K
       { h: ["1","D"], a: ["3","3"], lbl: "16-avos 9" },   // P81: EUA vs Bósnia (4º melhor 3º)
       { h: ["1","G"], a: ["3","4"], lbl: "16-avos 10" },  // P82: Bélgica vs 3º A/E/H/I/J
-      { h: ["2","K"], a: ["2","L"], lbl: "16-avos 11" },  // P83: 2ºK vs Croácia
+      { h: ["1","K"], a: ["2","L"], lbl: "16-avos 11" },  // P83: Portugal vs Croácia
       { h: ["1","H"], a: ["2","J"], lbl: "16-avos 12" },  // P84: Espanha vs 2ºJ
       { h: ["2","B"], a: ["3","5"], lbl: "16-avos 13" },  // P85: Suíça vs 3º E/F/G/I/J
       { h: ["1","J"], a: ["2","H"], lbl: "16-avos 14" },  // P86: Argentina vs Cabo Verde
-      { h: ["1","K"], a: ["3","6"], lbl: "16-avos 15" },  // P87: 1ºK vs Gana
+      { h: ["2","K"], a: ["3","6"], lbl: "16-avos 15" },  // P87: Colômbia vs Gana
       { h: ["3","7"], a: ["2","G"], lbl: "16-avos 16" },  // P88: Austrália vs Egito
     ];
 
